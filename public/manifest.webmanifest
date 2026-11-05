@@ -1,0 +1,16 @@
+{
+  "name": "ParsMea — Ogni spesa, la sua parte",
+  "short_name": "ParsMea",
+  "description": "Archivia scontrini e dividi le spese, sul tuo dispositivo.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f7f8fc",
+  "theme_color": "#17213d",
+  "lang": "it-IT",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
