@@ -1,8 +1,10 @@
-# ParsMea iPhone 1.0
+# ParsMea iPhone 1.0.1
 
 Versione PWA di ParsMea, pronta da pubblicare con GitHub Pages.
 
-Funzionalità: ticket con foto/PDF, OCR nel browser, lettura diretta dei PDF digitali, applicazione degli sconti, divisioni tra partecipanti, archiviazione locale e backup JSON.
+Funzionalità: ticket con foto/PDF, ritaglio automatico delle fotografie degli scontrini, più letture OCR nel browser, rilettura dei prezzi poco chiari, lettura diretta dei PDF digitali, applicazione degli sconti, divisioni tra partecipanti, archiviazione locale e backup JSON.
+
+La release 1.0.1 migliora la lettura degli scontrini termici, ma non garantisce un riconoscimento perfetto. Eventuali importi stimati per differenza dal totale vengono segnalati e vanno verificati prima di salvare la divisione.
 
 I dati di ogni persona restano nell'archivio del suo iPhone. Non c'è connessione al database della versione desktop. La beta e la 1.0 condividono lo stesso archivio browser se pubblicate allo stesso indirizzo.
 

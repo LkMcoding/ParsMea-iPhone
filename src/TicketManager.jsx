@@ -169,6 +169,8 @@ export default function TicketManager({
 
   const [receiptTotalCents, setReceiptTotalCents] = useState(null)
   const [ocrConfidence, setOcrConfidence] = useState(0)
+  const [ocrNeedsReview, setOcrNeedsReview] = useState(false)
+  const [ocrCorrectionNotes, setOcrCorrectionNotes] = useState([])
   const [recognitionMode, setRecognitionMode] = useState('ocr')
 
   const [ocrDiscountTotalCents, setOcrDiscountTotalCents] = useState(0)
@@ -674,6 +676,8 @@ export default function TicketManager({
 
       setReceiptTotalCents(result.receiptTotalCents)
       setOcrConfidence(result.confidence || 0)
+      setOcrNeedsReview(Boolean(result.needsReview))
+      setOcrCorrectionNotes(result.correctionNotes || [])
       setRecognitionMode(result.recognitionMode || 'ocr')
 
       setOcrDiscountTotalCents(
@@ -1961,8 +1965,10 @@ export default function TicketManager({
                   dello scontrino.
                 </p>
               ) : totalsMatch ? (
-                <p style={{ color: '#27996b' }}>
-                  ✓ I totali corrispondono.
+                <p style={{ color: ocrNeedsReview ? '#b47d23' : '#27996b' }}>
+                  {ocrNeedsReview
+                    ? '⚠ La somma corrisponde, ma alcuni caratteri OCR possono essere errati. Verifica ogni prezzo prima di salvare.'
+                    : '✓ I totali corrispondono.'}
                 </p>
               ) : (
                 <div role="alert" style={{
@@ -1976,6 +1982,30 @@ export default function TicketManager({
                       : `Mancano ${formatMoney(Math.abs(totalDifferenceCents))} rispetto al totale stampato.`}
                     {' '}Controlla prezzi, prodotti duplicati e sconti.
                   </p>
+                </div>
+              )}
+              {ocrNeedsReview && !totalsMatch && (
+                <p role="alert" style={{ color: '#a12d40', marginTop: 12 }}>
+                  La fotografia è stata analizzata con più filtri. Il risultato va
+                  comunque controllato: confronta i prodotti con lo scontrino
+                  e correggi gli importi riconosciuti male.
+                </p>
+              )}
+              {ocrCorrectionNotes.length > 0 && (
+                <div style={{
+                  marginTop: 12,
+                  border: '1px solid #f1d99f',
+                  background: '#fff9eb',
+                  padding: 12,
+                  borderRadius: 10,
+                  color: '#8d641e'
+                }}>
+                  <strong>Prezzi da verificare sullo scontrino</strong>
+                  <ul style={{ paddingLeft: 20, marginBottom: 0 }}>
+                    {ocrCorrectionNotes.map((note, index) => (
+                      <li key={index}>{note}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>

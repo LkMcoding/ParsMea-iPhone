@@ -264,7 +264,7 @@ function App() {
 
         <div className="sidebar-bottom">
           <span className="status-dot" />
-          Archivio locale
+          Archivio locale · v1.0.1
         </div>
       </aside>
 
