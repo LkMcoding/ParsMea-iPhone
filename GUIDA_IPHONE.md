@@ -1,64 +1,67 @@
-# ParsMea iPhone — Beta 1.0 (prima conversione)
+# ParsMea iPhone 1.0 — GitHub Pages
 
-Questa cartella è una **copia per iPhone** del progetto ParsMea desktop. Non modifica il progetto Windows né il suo database SQLite.
+ParsMea per iPhone è una **PWA**: si apre da Safari e si installa nella schermata Home senza App Store.
 
-## Funzioni della prima conversione
+## Cosa contiene
 
-- Cartelle e persone, ticket, data, modifica ed eliminazione con conferma.
-- Più foto/PDF per ticket, ordinamento e visualizzazione degli allegati.
-- OCR in Safari con Tesseract.js su fotografie (PDF solo archiviazione).
-- Associazione di sconti tramite lo stesso modulo del progetto Electron.
-- Modifica prodotti, divisioni con quote personalizzate, recupero e salvataggio.
-- Archivio locale IndexedDB; cartelle/nomi persone in localStorage.
-- Esporta e ripristina backup JSON (include anche le fotografie).
-- Icona iPhone, manifest PWA, cache app per riapertura offline.
+- Cartelle, partecipanti, ticket, fotografie e PDF.
+- Lettura dei PDF digitali direttamente nel browser; se il totale non corrisponde, OCR sulle pagine PDF come immagini.
+- OCR italiano/inglese sulle foto (JPG, PNG, WEBP) e sui PDF scannerizzati.
+- Correzione delle checkbox accanto ai nomi nella schermata di divisione, anche su iPhone.
+- Sconti, ripartizione tra persone, salvataggio delle divisioni.
+- Archivio locale sul dispositivo (IndexedDB + localStorage), backup manuale JSON e ripristino con conferma.
+- Schermata Home, icone e cache dell'interfaccia per funzionare come app web installata.
 
-**Limiti da verificare:** OCR del primo utilizzo richiede Internet per scaricare i modelli linguistici; sui dispositivi iOS il riconoscimento potrebbe essere lento. I modelli OCR non sono garantiti offline. Sono supportate fotografie JPG/PNG/WEBP e PDF come allegato; non HEIC. L'app non sincronizza automaticamente dati tra PC e iPhone. Prima di considerarla stabile, esegui test di OCR, salvataggio e ripristino su un vero iPhone.
+## Come aggiornare la Beta iPhone senza perdere i dati
 
-## Prova locale (Windows)
+**Importante:** pubblica la versione 1.0 **nello stesso repository e allo stesso indirizzo GitHub Pages** della beta, senza cambiare dominio, nome del repository o percorso. L'archivio locale mantiene il nome `parsmea-iphone-v1`.
 
-1. Apri in VS Code la cartella `ParsMea-iPhone`.
-2. Apri un terminale PowerShell nella cartella.
-3. Esegui `npm.cmd install` (la prima volta, se mancano le dipendenze).
-4. Esegui `npm.cmd run dev`.
-5. Apri in Chrome o Edge il link Vite mostrato nel terminale.
-6. **Non usare** `npm.cmd run desktop`: questa versione è solo web.
-7. Esegui `npm.cmd run test` per i controlli automatici; poi `npm.cmd run build` per verificare la versione pubblicabile.
+1. Apri la beta sul tuo iPhone.
+2. Usa **Esporta backup** e salva il file JSON nell'app File: è una precauzione consigliata prima di pubblicare.
+3. Pubblica i nuovi sorgenti sullo stesso repository GitHub.
+4. Su Safari riapri lo stesso URL, attendi il nuovo caricamento, poi riapri l'app dalla schermata Home. Se vedi ancora la beta, chiudi del tutto la PWA e riaprila.
+5. Verifica che ticket, cartelle e divisioni precedenti siano ancora presenti. Non cancellare “Dati siti web” né eliminare l'app per forzare l'aggiornamento.
 
-## Pubblicazione GitHub (gratuita, con repository pubblico)
+## Caricare i file su GitHub
 
-1. Crea su GitHub un repository **vuoto** chiamato `ParsMea-iPhone`, visibilità `Public`. NON caricare `.env`, `node_modules`, `dist`, dati o fotografie personali.
-2. Carica nel repository i file di questa cartella **mantenendo la struttura** e includendo `.github/workflows/iphone-pages.yml`. La cartella `.github` può essere nascosta in Esplora file: attiva *Visualizza > Elementi nascosti*.
-3. Controlla che `package.json`, `index.html`, `src/` e `.github/` siano nella radice del repository.
-4. Vai in **Settings > Pages > Build and deployment > Source** e scegli **GitHub Actions**.
-5. Vai in **Actions**: attendi l'esecuzione del flusso `Pubblica ParsMea iPhone` (puoi avviarlo manualmente con `Run workflow`).
-6. Quando il flusso diventa verde, in **Settings > Pages** trovi l'URL pubblico: `https://TUO-UTENTE.github.io/ParsMea-iPhone/` (sostituisci con il tuo account e il nome esatto del repository).
+1. Estrai lo ZIP `ParsMea_iPhone_1_0_GitHub.zip`.
+2. Aggiorna il repository **ParsMea-iPhone** già esistente, copiando **il contenuto** della cartella estratta nella radice del repository. Non creare una cartella `ParsMea-iPhone` annidata nel repository.
+3. Includi anche `.github/workflows/iphone-pages.yml` e `package-lock.json`. **Non** caricare `node_modules`, `dist`, ricevute personali o backup JSON.
+4. Pubblica/effettua il push sul ramo `main`.
+5. In GitHub, **Settings → Pages → Build and deployment → Source** deve essere `GitHub Actions`.
+6. In **Actions**, attendi che `Pubblica ParsMea iPhone` finisca con il segno verde.
 
-La configurazione Vite calcola automaticamente il percorso base dal nome del repository durante GitHub Actions, quindi funziona anche con un nome diverso.
+Il file `vite.config.js` ricava il percorso GitHub Pages dal nome effettivo del repository durante la build.
 
 ## Installazione su iPhone
 
-1. Apri il link in **Safari**.
-2. Tocca **Condividi** e **Aggiungi alla schermata Home**.
-3. Se compare l'opzione, abilita **Apri come app web**.
-4. Tocca **Aggiungi** e apri l'icona ParsMea.
+1. Apri l'URL GitHub Pages del repository in Safari.
+2. Premi **Condividi → Aggiungi alla schermata Home**.
+3. Abilita “Apri come app web” se compare, poi conferma.
 
-## Dati e backup
+## Prove consigliate
 
-- GitHub pubblica solo i file di programma. Gli scontrini selezionati nell'app vengono salvati nell'archivio del browser del dispositivo.
-- Per mettere al sicuro le spese, usa **Esporta backup** in ParsMea e salva il JSON nell'app **File** o in un luogo sicuro.
-- **Ripristina backup** SOSTITUISCE tutti i dati attuali dell'app iPhone, dopo una conferma.
-- La disinstallazione o cancellazione dei dati del sito può far perdere il contenuto locale. Conserva copie esterne dei backup.
-- I dati della versione Windows non vengono importati automaticamente. Le due versioni al momento hanno archivi indipendenti.
+- Verifica che la checkbox sia immediatamente a sinistra di “Francesco” e “Luca”, senza testo sovrapposto.
+- Prova il PDF Esselunga: attesi **214,26 €** e sconti **22,64 €**.
+- Prova fotografia, PDF scannerizzato, divisione e riapertura del ticket.
+- Esporta un backup. Il pulsante Ripristina **sostituisce** i dati attuali: usalo solo se necessario.
 
-## Per sviluppatori
+## Limiti attuali
 
-- `src/browserParsmea.js`: compatibilità con API Electron usando IndexedDB.
-- `src/browserBackup.js`: backup completo JSON e ripristino.
-- `src/receiptOcr.js` e `src/receiptDiscounts.js`: OCR e sconti eseguiti nel browser.
-- `public/manifest.webmanifest` e `public/sw.js`: PWA.
-- `.github/workflows/iphone-pages.yml`: compilazione e pubblicazione automatica.
+- Il primo OCR con Tesseract richiede rete per scaricare i modelli linguistici. Non è garantito l'OCR offline prima che siano in cache.
+- Su iPhone, un PDF lungo o scannerizzato può impiegare più tempo ed esaurire la memoria; limite 25 pagine per PDF e 30 MB per file.
+- HEIC non supportato in questa versione; scegli JPEG/PNG o esporta la foto.
+- I dati iPhone restano su iPhone: nessuna sincronizzazione automatica con SQLite della versione Windows.
+- La build completa deve essere verificata dall'azione GitHub, che esegue `npm ci`, test e build. Nell'ambiente di preparazione non sono disponibili le dipendenze native Linux di Vite; i test JS dei calcoli sono stati eseguiti, ma il rendering Safari richiede verifica su dispositivo.
 
-## Stato di verifica
+## Prova facoltativa su Windows
 
-La conversione è stata preparata dal codice ricevuto il 5/11/2026. I test sui calcoli degli sconti e delle divisioni sono passati. La compilazione completa non è stata eseguibile nell'ambiente di preparazione perché le dipendenze native Vite disponibili nello ZIP erano per Windows, mentre l'ambiente era Linux. Esegui `npm.cmd install` e `npm.cmd run build` sul PC prima della pubblicazione. Un test su Safari iPhone resta necessario prima di considerarla affidabile per dati importanti.
+Apri PowerShell nella cartella sorgente:
+
+```powershell
+npm.cmd install
+npm.cmd run test
+npm.cmd run build
+```
+
+Questa versione non usa Electron: non eseguire `npm.cmd run desktop`.

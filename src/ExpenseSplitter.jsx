@@ -262,23 +262,18 @@ export default function ExpenseSplitter({
               <div style={{ color: colors.muted, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
                 OPPURE DIVIDI TRA PIÙ PERSONE
               </div>
-              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div className="split-person-options">
                 {people.map((person) => (
-                  <label key={person.id} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    color: colors.dark
-                  }}>
+                  <label
+                    key={person.id}
+                    className={`split-person-option${selected.includes(person.id) ? ' is-selected' : ''}`}
+                  >
                     <input
                       type="checkbox"
                       checked={selected.includes(person.id)}
                       onChange={() => togglePerson(item.id, person.id)}
-                      style={{ margin: 0 }}
                     />
-                    {person.name}
+                    <span>{person.name}</span>
                   </label>
                 ))}
               </div>

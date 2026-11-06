@@ -368,13 +368,40 @@ async function saveSplit(data) {
 async function recognize(ticketId) {
   await getTicket(ticketId)
   const attachments = await readByIndex('attachments', 'ticketId', ticketId)
-  if (!attachments.length) throw new Error('Non ci sono fotografie nel ticket.')
+  if (!attachments.length) throw new Error('Non ci sono immagini o PDF nel ticket.')
   attachments.sort((a, b) => a.position - b.position)
-  if (attachments.some((file) => file.mimeType === 'application/pdf')) {
-    throw new Error('L’OCR dei PDF non è ancora disponibile. Carica fotografie JPG o PNG.')
+  const { recognizeBrowserReceipt, buildCandidate, mergeOcrPages } = await import('./receiptOcr.js')
+  const pdfCount = attachments.filter((file) => file.mimeType === 'application/pdf').length
+  if (!pdfCount) return recognizeBrowserReceipt(attachments.map((file) => file.blob))
+
+  const { extractBrowserPdfText, renderBrowserPdfPages } = await import('./browserPdfReceipt.js')
+
+  // Prima prova il livello testuale del PDF (più accurato e molto più veloce
+  // dell'OCR); solo se il totale non torna passa alle pagine rasterizzate.
+  if (pdfCount === attachments.length) {
+    const pages = []
+    for (const file of attachments) {
+      pages.push(...await extractBrowserPdfText(file.blob))
+    }
+    const digital = buildCandidate(mergeOcrPages(pages), 100, 'pdf-text')
+    if (digital.items.length > 0 && digital.totalsMatch === true) {
+      return { ...digital, imageCount: pages.length, pdfPageCount: pages.length, recognitionMode: 'pdf-text' }
+    }
   }
-  const { recognizeBrowserReceipt } = await import('./receiptOcr.js')
-  return recognizeBrowserReceipt(attachments.map((file) => file.blob))
+
+  const sources = []
+  let pdfPageCount = 0
+  for (const file of attachments) {
+    if (file.mimeType !== 'application/pdf') {
+      sources.push(file.blob)
+      continue
+    }
+    const pages = await renderBrowserPdfPages(file.blob)
+    pdfPageCount += pages.length
+    sources.push(...pages)
+  }
+  const result = await recognizeBrowserReceipt(sources)
+  return { ...result, pdfPageCount, recognitionMode: 'ocr' }
 }
 
 export const browserParsmea = {

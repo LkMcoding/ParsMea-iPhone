@@ -55,7 +55,7 @@ export function parseReceiptText(rawText) {
   return { items, receiptTotalCents }
 }
 
-function buildCandidate(rawText, confidence, language) {
+export function buildCandidate(rawText, confidence, language) {
   const parsed = parseReceiptText(rawText)
   const discounted = applyReceiptDiscounts(rawText, parsed.items)
   const itemsTotalCents = discounted.items.reduce((sum, item) => sum + item.priceCents, 0)
@@ -83,7 +83,7 @@ function scoreCandidate(candidate) {
     (candidate.totalsMatch === false ? 80 : 0)
 }
 
-function mergeOcrPages(texts) {
+export function mergeOcrPages(texts) {
   const merged = []
 
   for (const text of texts) {
@@ -104,7 +104,11 @@ function mergeOcrPages(texts) {
   return merged.join('\n')
 }
 
-async function recognizePass(blobs, language) {
+async function recognizePass(sources, language) {
+  // I PDF con testo digitale possono essere mischiati con foto e pagine OCR.
+  // Le stringhe non richiedono nessun download dei modelli Tesseract.
+  const needsWorker = sources.some((source) => typeof source !== 'string')
+  if (!needsWorker) return buildCandidate(mergeOcrPages(sources), 100, 'pdf-text')
   const { createWorker, PSM } = await import('tesseract.js')
   const worker = await createWorker(language, 1)
 
@@ -116,24 +120,30 @@ async function recognizePass(blobs, language) {
     const texts = []
     let confidenceTotal = 0
 
-    for (const blob of blobs) {
-      const result = await worker.recognize(blob)
+    let imageCount = 0
+    for (const source of sources) {
+      if (typeof source === 'string') {
+        texts.push(source)
+        continue
+      }
+      const result = await worker.recognize(source)
       texts.push(result.data.text || '')
       confidenceTotal += result.data.confidence || 0
+      imageCount++
     }
-    return buildCandidate(mergeOcrPages(texts), confidenceTotal / blobs.length, language)
+    return buildCandidate(mergeOcrPages(texts), confidenceTotal / imageCount, language)
   } finally {
     await worker.terminate()
   }
 }
 
-export async function recognizeBrowserReceipt(blobs) {
-  if (!Array.isArray(blobs) || !blobs.length) {
-    throw new Error('Carica almeno un’immagine dello scontrino.')
+export async function recognizeBrowserReceipt(sources) {
+  if (!Array.isArray(sources) || !sources.length) {
+    throw new Error('Carica almeno un’immagine o un PDF dello scontrino.')
   }
   let best
   try {
-    best = await recognizePass(blobs, 'ita')
+    best = await recognizePass(sources, 'ita')
   } catch (error) {
     throw new Error(`OCR non disponibile: ${error.message}. Per il primo utilizzo serve Internet.`)
   }
@@ -141,12 +151,12 @@ export async function recognizeBrowserReceipt(blobs) {
   if (best.receiptTotalCents === null || best.totalsMatch !== true ||
       best.unresolvedDiscounts.length > 0) {
     try {
-      const alternative = await recognizePass(blobs, 'eng')
+      const alternative = await recognizePass(sources, 'eng')
       if (scoreCandidate(alternative) > scoreCandidate(best)) best = alternative
     } catch (error) {
       console.warn('Modello OCR alternativo non disponibile:', error)
     }
   }
 
-  return { ...best, imageCount: blobs.length }
+  return { ...best, imageCount: sources.length }
 }

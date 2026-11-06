@@ -169,6 +169,7 @@ export default function TicketManager({
 
   const [receiptTotalCents, setReceiptTotalCents] = useState(null)
   const [ocrConfidence, setOcrConfidence] = useState(0)
+  const [recognitionMode, setRecognitionMode] = useState('ocr')
 
   const [ocrDiscountTotalCents, setOcrDiscountTotalCents] = useState(0)
   const [ocrAppliedDiscounts, setOcrAppliedDiscounts] = useState([])
@@ -355,6 +356,7 @@ export default function TicketManager({
 
     setReceiptTotalCents(null)
     setOcrConfidence(0)
+    setRecognitionMode('ocr')
 
     setOcrDiscountTotalCents(0)
     setOcrAppliedDiscounts([])
@@ -672,6 +674,7 @@ export default function TicketManager({
 
       setReceiptTotalCents(result.receiptTotalCents)
       setOcrConfidence(result.confidence || 0)
+      setRecognitionMode(result.recognitionMode || 'ocr')
 
       setOcrDiscountTotalCents(
         result.discountTotalCents || 0
@@ -757,6 +760,9 @@ export default function TicketManager({
     receiptTotalCents !== null &&
     !hasInvalidPrices &&
     itemsTotalCents === receiptTotalCents
+
+  const totalDifferenceCents = receiptTotalCents !== null && !hasInvalidPrices
+    ? itemsTotalCents - receiptTotalCents : null
 
   // ========================================
   // APERTURA DIVISIONE
@@ -1066,8 +1072,8 @@ export default function TicketManager({
                     ? 'allegato selezionato'
                     : 'allegati selezionati'}.
                   {' '}
-                  L'OCR leggerà le immagini
-                  dall'alto verso il basso.
+                  L'OCR leggerà foto e pagine PDF
+                  nell'ordine degli allegati.
                 </p>
 
                 <div
@@ -1349,14 +1355,14 @@ export default function TicketManager({
                 <div style={{ marginBottom: 18 }}>
 
                   <h4 style={{ marginBottom: 9 }}>
-                    Fotografie dello scontrino
+                    Allegati dello scontrino
                   </h4>
 
                   <p style={{
                     fontSize: 12,
                     color: '#667085'
                   }}>
-                    L'OCR leggerà tutte le foto
+                    L'OCR leggerà foto e pagine PDF
                     nell'ordine indicato qui sotto.
                   </p>
 
@@ -1477,8 +1483,8 @@ export default function TicketManager({
                     }}
                   >
                     {attachmentsBusy
-                      ? 'Aggiornamento fotografie...'
-                      : '+ Aggiungi fotografie'}
+                      ? 'Aggiornamento allegati...'
+                      : '+ Aggiungi foto o PDF'}
                   </button>
                 </div>
 
@@ -1609,7 +1615,9 @@ export default function TicketManager({
               background: '#f7f8fc'
             }}>
               <strong>
-                Riconoscimento OCR completato
+                {recognitionMode === 'pdf-text'
+                  ? 'Testo PDF letto direttamente'
+                  : 'Riconoscimento OCR completato'}
               </strong>
 
               <p style={{
@@ -1617,7 +1625,9 @@ export default function TicketManager({
                 fontSize: 12,
                 color: '#8892a7'
               }}>
-                Attendibilità generale OCR: {ocrConfidence}%
+                {recognitionMode === 'pdf-text'
+                  ? 'Prodotti e prezzi estratti direttamente dal testo del PDF, senza OCR.'
+                  : `Attendibilità generale OCR: ${ocrConfidence}%`}
               </p>
 
               {ocrAppliedDiscounts.length > 0 && (
@@ -1955,11 +1965,18 @@ export default function TicketManager({
                   ✓ I totali corrispondono.
                 </p>
               ) : (
-                <p style={{ color: '#d64b58' }}>
-                  Attenzione: la somma dei prodotti
-                  non corrisponde al totale dello scontrino.
-                  Controlla gli eventuali sconti non riconosciuti.
-                </p>
+                <div role="alert" style={{
+                  color: '#a12d40', background: '#fff3f5',
+                  border: '1px solid #f0c5cd', borderRadius: 10, padding: 12
+                }}>
+                  <strong>⚠ I totali non corrispondono.</strong>
+                  <p style={{ margin: '6px 0 0', fontSize: 13 }}>
+                    {totalDifferenceCents > 0
+                      ? `La somma dei prodotti supera il totale di ${formatMoney(totalDifferenceCents)}.`
+                      : `Mancano ${formatMoney(Math.abs(totalDifferenceCents))} rispetto al totale stampato.`}
+                    {' '}Controlla prezzi, prodotti duplicati e sconti.
+                  </p>
+                </div>
               )}
             </div>
 

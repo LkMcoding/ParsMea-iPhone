@@ -573,6 +573,54 @@
   resize: vertical;
 }
 
+/* Le checkbox devono restare affiancate al nome, anche su Safari iPhone. */
+.modal input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  flex: 0 0 18px;
+  padding: 0;
+  margin: 0;
+  accent-color: #6c59e8;
+  resize: none;
+}
+
+.split-person-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.modal .split-person-option {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  max-width: 100%;
+  gap: 8px;
+  padding: 8px 11px;
+  margin: 0;
+  border: 1px solid #e5e8f2;
+  border-radius: 10px;
+  background: #fff;
+  color: #192443;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal .split-person-option.is-selected {
+  border-color: #6c59e8;
+  background: #f1eeff;
+}
+
+.split-person-option span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .modal input:focus,
 .modal textarea:focus {
   border-color: #8e80ef;
