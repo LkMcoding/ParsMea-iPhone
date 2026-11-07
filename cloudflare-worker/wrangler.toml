@@ -4,3 +4,18 @@ compatibility_date = "2026-10-01"
 
 [ai]
 binding = "AI"
+
+# Limiti di sicurezza sul piano gratuito; si applicano a ogni datacenter Cloudflare.
+[[ratelimits]]
+name = "IP_RATE_LIMITER"
+namespace_id = "1001"
+[ratelimits.simple]
+limit = 6
+period = 60
+
+[[ratelimits]]
+name = "GLOBAL_RATE_LIMITER"
+namespace_id = "1002"
+[ratelimits.simple]
+limit = 20
+period = 60

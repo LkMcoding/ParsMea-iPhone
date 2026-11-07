@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import ExpenseSplitter from './ExpenseSplitter.jsx'
-import { AI_ENDPOINT_STORAGE_KEY, sanitizeAiEndpoint } from './receiptAi.js'
 
 // ========================================
 // FUNZIONI DI SUPPORTO
@@ -177,10 +176,6 @@ export default function TicketManager({
   const [ocrDiscountTotalCents, setOcrDiscountTotalCents] = useState(0)
   const [ocrAppliedDiscounts, setOcrAppliedDiscounts] = useState([])
   const [ocrUnresolvedDiscounts, setOcrUnresolvedDiscounts] = useState([])
-  const [aiEndpoint, setAiEndpoint] = useState(() => localStorage.getItem(AI_ENDPOINT_STORAGE_KEY) || '')
-  const [aiAccessCode, setAiAccessCode] = useState('')
-  const [aiConfigOpen, setAiConfigOpen] = useState(false)
-  const [aiConfigError, setAiConfigError] = useState('')
   const [aiReviewConfirmed, setAiReviewConfirmed] = useState(false)
 
   // ========================================
@@ -670,9 +665,7 @@ export default function TicketManager({
     try {
       const result = await window.parsmea.ocr.recognize(
         selectedTicket.id,
-        mode === 'ai' ? {
-          mode: 'ai', endpoint: aiEndpoint, accessCode: aiAccessCode
-        } : { mode: 'local' }
+        { mode: mode === 'ai' ? 'ai' : 'local' }
       )
 
       const items = result.items.map((item) => ({
@@ -1517,49 +1510,12 @@ export default function TicketManager({
                   background: '#f4f2ff', border: '1px solid #ddd7fc',
                   borderRadius: 12, padding: 14, marginBottom: 14
                 }}>
-                  <strong style={{ color: '#5546ba' }}>✨ ParsMea AI 2.0 · quota gratuita</strong>
+                  <strong style={{ color: '#5546ba' }}>✨ ParsmeAI · quota gratuita</strong>
                   <p style={{ margin: '7px 0', fontSize: 12, color: '#606b85' }}>
-                    Le foto vengono inviate a Cloudflare solo quando scegli “Leggi con IA”.
-                    L'archivio e le divisioni rimangono su questo iPhone.
+                    ParsmeAI è già pronto su ogni dispositivo: non servono password né configurazioni.
+                    Le foto vengono inviate a Cloudflare solo quando premi “Calcola con ParsmeAI”.
+                    L'archivio e le divisioni rimangono su questo dispositivo.
                   </p>
-                  <button type="button" className="secondary-button"
-                    onClick={() => setAiConfigOpen((value) => !value)}
-                    style={{ width: '100%', padding: 10 }}>
-                    ⚙ {aiEndpoint ? 'Modifica configurazione IA' : 'Configura IA gratuita'}
-                  </button>
-                  {aiConfigOpen && (
-                    <div style={{ marginTop: 12 }}>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700 }}>
-                        URL del tuo Cloudflare Worker
-                        <input type="url" value={aiEndpoint}
-                          placeholder="https://parsmea-ai-free.TUONOME.workers.dev"
-                          onChange={(e) => setAiEndpoint(e.target.value)}
-                          style={{ display: 'block', width: '100%', boxSizing: 'border-box', margin: '5px 0 12px', padding: 10 }}/>
-                      </label>
-                      <button className="primary-button" type="button" style={{ width: '100%' }}
-                        onClick={() => {
-                          try {
-                            const url = sanitizeAiEndpoint(aiEndpoint)
-                            localStorage.setItem(AI_ENDPOINT_STORAGE_KEY, url)
-                            setAiEndpoint(url)
-                            setAiConfigError('')
-                            setAiConfigOpen(false)
-                          } catch (e) { setAiConfigError(e.message) }
-                        }}>
-                        Salva indirizzo IA
-                      </button>
-                      {aiConfigError && <p role="alert" style={{ color: '#b82f49' }}>{aiConfigError}</p>}
-                    </div>
-                  )}
-                  {aiEndpoint && (
-                    <label style={{ display: 'block', marginTop: 12, fontSize: 12, fontWeight: 700 }}>
-                      Codice segreto IA (non salvato sul dispositivo)
-                      <input type="password" autoComplete="off" value={aiAccessCode}
-                        placeholder="Il codice creato su Cloudflare, almeno 16 caratteri"
-                        onChange={(e) => setAiAccessCode(e.target.value)}
-                        style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, padding: 10 }}/>
-                    </label>
-                  )}
                 </div>
 
                 <button
@@ -1574,13 +1530,12 @@ export default function TicketManager({
                     attachmentsBusy ||
                     attachmentsLoading ||
                     deleting ||
-                    attachments.length === 0 ||
-                    !aiEndpoint || aiAccessCode.length < 16
+                    attachments.length === 0
                   }
                 >
                   {ocrLoading
-                    ? 'Analisi dello scontrino in corso...'
-                    : '✨ Leggi con IA e dividi spesa'}
+                    ? 'Calcolo con ParsmeAI in corso...'
+                    : 'Calcola con ParsmeAI'}
                 </button>
 
                 <button type="button" className="secondary-button"

@@ -375,7 +375,7 @@ async function recognize(ticketId, options = {}) {
   const pdfCount = attachments.filter((file) => file.mimeType === 'application/pdf').length
   if (!pdfCount) {
     if (options.mode === 'ai') {
-      return recognizeAiReceipt(attachments.map((file) => file.blob), options.endpoint, options.accessCode)
+      return recognizeAiReceipt(attachments.map((file) => file.blob))
     }
     return recognizeBrowserReceipt(attachments.map((file) => file.blob))
   }
@@ -407,7 +407,7 @@ async function recognize(ticketId, options = {}) {
     sources.push(...pages)
   }
   if (options.mode === 'ai') {
-    const result = await recognizeAiReceipt(sources, options.endpoint, options.accessCode)
+    const result = await recognizeAiReceipt(sources)
     return { ...result, pdfPageCount }
   }
   const result = await recognizeBrowserReceipt(sources)

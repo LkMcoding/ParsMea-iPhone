@@ -1,5 +1,6 @@
-// ParsMea AI 2.0 — nessuna API key nel sito GitHub Pages.
-// Cloudflare Workers AI Free: il consumo della quota gratuita viene bloccato a esaurimento.
+// ParsmeAI 2.1 — accesso senza configurazione sui dispositivi.
+// Endpoint pubblico: il controllo Origin NON è autenticazione.
+// I limiti IP e globali sono gestiti da Cloudflare, senza chiavi nel frontend.
 const ALLOWED_ORIGIN = 'https://lkmcoding.github.io'
 const MODEL = '@cf/qwen/qwen3.8-27b'
 const MAX_BODY_BYTES = 8_000_000
@@ -24,7 +25,7 @@ function cors(origin) {
     'Access-Control-Allow-Origin': origin,
     'Vary': 'Origin',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type',
     'Cache-Control': 'no-store'
   } : { 'Cache-Control': 'no-store' }
 }
@@ -36,18 +37,24 @@ function json(body, status, origin) {
   })
 }
 
-async function authorized(value, expected) {
-  if (!value?.startsWith('Bearer ') || typeof expected !== 'string' || expected.length < 16) return false
-  const provided = value.slice(7)
-  if (provided.length !== expected.length || provided.length > 256) return false
-  // Confronta digest di lunghezza fissa. Il segreto non viene loggato né salvato.
-  const [a, b] = await Promise.all([provided, expected].map((x) =>
-    crypto.subtle.digest('SHA-256', new TextEncoder().encode(x))))
-  const left = new Uint8Array(a)
-  const right = new Uint8Array(b)
-  let diff = 0
-  for (let i = 0; i < left.length; i++) diff |= left[i] ^ right[i]
-  return diff === 0
+async function readLimitedText(request) {
+  if (!request.body) return ''
+  const reader = request.body.getReader()
+  const decoder = new TextDecoder()
+  let bytes = 0
+  let result = ''
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      bytes += value.byteLength
+      if (bytes > MAX_BODY_BYTES) throw new RangeError('body-too-large')
+      result += decoder.decode(value, { stream: true })
+    }
+    return result + decoder.decode()
+  } finally {
+    reader.releaseLock()
+  }
 }
 
 function parseModelJson(result) {
@@ -72,26 +79,41 @@ export default {
     }
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) })
     if (request.method !== 'POST') return json({ error: 'Metodo non supportato.' }, 405, origin)
-    if (!env.AI || !env.PARSMEA_ACCESS_CODE || env.PARSMEA_ACCESS_CODE.length < 16) {
-      return json({ error: 'Cloudflare non configurato: aggiungi il segreto PARSMEA_ACCESS_CODE (almeno 16 caratteri).' }, 503, origin)
-    }
-    if (!await authorized(request.headers.get('Authorization'), env.PARSMEA_ACCESS_CODE)) {
-      return json({ error: 'Codice IA errato. Inserisci il codice creato nel Worker Cloudflare.' }, 401, origin)
+    if (!env.AI || !env.IP_RATE_LIMITER || !env.GLOBAL_RATE_LIMITER) {
+      return json({ error: 'ParsmeAI non è ancora pronto: pubblica il Worker 2.1 con i suoi limiti di richieste.' }, 503, origin)
     }
     const length = Number(request.headers.get('Content-Length') || 0)
     if (length > MAX_BODY_BYTES) return json({ error: 'Fotografie troppo grandi: scegli foto più piccole.' }, 413, origin)
     let payload
     try {
-      const raw = await request.text()
-      if (raw.length > MAX_BODY_BYTES) return json({ error: 'Richiesta superiore a 8 MB.' }, 413, origin)
+      const raw = await readLimitedText(request)
       payload = JSON.parse(raw)
-    } catch {
+    } catch (error) {
+      if (error instanceof RangeError && error.message === 'body-too-large') {
+        return json({ error: 'Richiesta superiore a 8 MB.' }, 413, origin)
+      }
       return json({ error: 'Formato delle immagini non valido.' }, 400, origin)
     }
     if (!Array.isArray(payload.images) || payload.images.length < 1 || payload.images.length > 3 ||
         !payload.images.every((x) => typeof x === 'string' &&
           /^data:image\/jpeg;base64,[a-z0-9+/=]+$/i.test(x) && x.length < 5_000_000)) {
       return json({ error: 'Invia da 1 a 3 immagini JPEG valide.' }, 400, origin)
+    }
+    try {
+      // Binding Cloudflare: limiti approssimativi, distribuiti per datacenter.
+      // CF-Connecting-IP viene assegnato da Cloudflare ai visitatori reali.
+      const ip = request.headers.get('CF-Connecting-IP') || 'unknown'
+      const byIp = await env.IP_RATE_LIMITER.limit({ key: ip })
+      if (!byIp.success) {
+        return json({ error: 'Hai effettuato troppe analisi in poco tempo. Aspetta un minuto e riprova.' }, 429, origin)
+      }
+      const overall = await env.GLOBAL_RATE_LIMITER.limit({ key: 'parsmeai' })
+      if (!overall.success) {
+        return json({ error: 'ParsmeAI sta ricevendo troppe richieste. Aspetta un minuto e riprova.' }, 429, origin)
+      }
+    } catch {
+      // In caso di malfunzionamento dei limiti non usare la quota AI senza protezione.
+      return json({ error: 'La protezione gratuita di ParsmeAI non è disponibile. Riprova più tardi.' }, 503, origin)
     }
     try {
       const result = await env.AI.run(MODEL, {

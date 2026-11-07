@@ -1,6 +1,8 @@
 import { prepareReceiptImages } from './receiptImage.js'
 
-export const AI_ENDPOINT_STORAGE_KEY = 'parsmea-ai-endpoint-v2'
+// L'indirizzo del servizio non è un segreto: la quota è limitata nel Worker.
+// Non archiviare mai credenziali o chiavi AI in questo frontend pubblico.
+export const PARSMEAI_WORKER_URL = 'https://parsmea-ai-free.4df72p7yy4.workers.dev'
 
 export function sanitizeAiEndpoint(value) {
   const url = new URL(String(value || '').trim())
@@ -92,9 +94,8 @@ export function normalizeAiReceipt(input) {
   }
 }
 
-export async function recognizeAiReceipt(sources, endpoint, accessCode) {
-  const url = sanitizeAiEndpoint(endpoint)
-  if (String(accessCode || '').length < 16) throw new Error('Inserisci il codice segreto dell’IA (almeno 16 caratteri).')
+export async function recognizeAiReceipt(sources) {
+  const url = sanitizeAiEndpoint(PARSMEAI_WORKER_URL)
   if (sources.length > 3) throw new Error('Per l’IA gratuita seleziona al massimo 3 foto/pagine per scontrino.')
   const images = []
   for (const blob of sources) {
@@ -115,13 +116,13 @@ export async function recognizeAiReceipt(sources, endpoint, accessCode) {
       response = await fetch(url, {
         method: 'POST',
         mode: 'cors',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessCode}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ images }),
         signal: controller.signal
       })
     } catch (error) {
       if (error.name === 'AbortError') throw new Error('L’IA non ha risposto entro 90 secondi. Riprova.')
-      throw new Error('Non riesco a raggiungere il Worker IA. Controlla connessione, indirizzo e pubblicazione Cloudflare.')
+      throw new Error('ParsmeAI non è raggiungibile. Controlla la connessione o riprova più tardi.')
     }
     const body = await response.json().catch(() => ({}))
     if (!response.ok) {

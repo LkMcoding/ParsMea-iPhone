@@ -4,7 +4,7 @@ import { applyReceiptDiscounts } from '../src/receiptDiscounts.js'
 import { calculateSplit, distributeCents } from '../src/splitMath.js'
 import { parseReceiptText, buildCandidate, chooseBestCandidate, inferSingleDiscount } from '../src/receiptOcr.js'
 import { detectReceiptBounds } from '../src/receiptImage.js'
-import { normalizeAiReceipt, sanitizeAiEndpoint } from '../src/receiptAi.js'
+import { normalizeAiReceipt, sanitizeAiEndpoint, PARSMEAI_WORKER_URL } from '../src/receiptAi.js'
 
 test('ParsMea IA: dieci prodotti Lidl con sconto riconosciuto e totale 21,87', () => {
   const rows = [
@@ -86,6 +86,8 @@ test('ParsMea IA: non inventa articoli per compensare differenze', () => {
 })
 
 test('ParsMea IA: endpoint limitato a Workers HTTPS', () => {
+  assert.equal(PARSMEAI_WORKER_URL, 'https://parsmea-ai-free.4df72p7yy4.workers.dev')
+  assert.equal(sanitizeAiEndpoint(PARSMEAI_WORKER_URL), PARSMEAI_WORKER_URL)
   assert.equal(sanitizeAiEndpoint('https://parsmea.example.workers.dev/'), 'https://parsmea.example.workers.dev')
   assert.throws(() => sanitizeAiEndpoint('http://parsmea.example.workers.dev'), /HTTPS/)
   assert.throws(() => sanitizeAiEndpoint('https://example.com'), /Cloudflare/)

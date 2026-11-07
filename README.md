@@ -1,21 +1,42 @@
-# ParsMea iPhone 2.0.1 AI Free
+# ParsMea iPhone 2.1 — ParsmeAI automatico
 
-La web app PWA ParsMea iPhone per dividere gli scontrini tra più persone, mantenendo **foto, ticket, cartelle e ripartizioni nell'archivio locale** dello stesso iPhone.
+ParsMea è una PWA per registrare scontrini e dividere le spese. Foto, ticket, cartelle,
+persone e ripartizioni continuano a vivere **solo nell'archivio locale del dispositivo**.
 
-## Novità 2.0.1
+## Novità 2.1
 
-- **Correzione sconti IA:** quando l'IA restituisce il prezzo lordo e uno sconto già associato a un articolo, lo sconto viene sottratto solo se spiega esattamente la differenza con il totale stampato. Esempio: rustici 2,04 € − 0,05 € = 1,99 €; totale Lidl 21,87 €. Nessuna sottrazione doppia né compensazione inventata.
-- **Non serve riconfigurare Cloudflare:** per chi utilizza già il Worker di ParsMea AI 2.0, basta aggiornare i file della PWA sullo stesso repository.
+- **Calcola con ParsmeAI** è il nome esatto del nuovo pulsante.
+- **Nessuna configurazione per dispositivo**: indirizzo del Worker integrato, niente campi per URL e password.
+- Cloudflare Worker già identificato: `https://parsmea-ai-free.4df72p7yy4.workers.dev`.
+- L'app pubblica non contiene API key, token di accesso o altri segreti.
+- Worker protetto da limiti approssimativi **6 analisi/minuto per IP** e **20 analisi/minuto complessive per datacenter Cloudflare**. Il Worker rifiuta le analisi se i binding protettivi non sono installati.
+- Limiti sulle dimensioni delle fotografie e sul numero di pagine: al massimo 3, 8 MB complessivi.
+- Gestione degli errori di quota e conservazione della funzione OCR locale.
+- Correzione degli sconti (v2.0.1) preservata; non vengono creati prodotti fittizi per far coincidere i totali.
+- Nessun cambio di origine PWA o schema IndexedDB: archivio `parsmea-iphone-v1` preservato.
 
-- **Lettura degli scontrini con IA vision** via Cloudflare Workers AI (piano gratuito, su Worker personale).
-- Riconoscimento diretto dei prodotti e dei prezzi netti, separazione di sconti e modalità di pagamento.
-- Verifica obbligatoria di ogni risultato IA; pulsanti per correggere prodotti e totale, blocco se la somma non quadra. Nessun articolo fittizio creato per pareggiare i conti.
-- La lettura **OCR locale** precedente resta come alternativa quando l'IA non è configurata o la quota è terminata.
-- Dati locali preservati: IndexedDB `parsmea-iphone-v1`, stesso repository e stesso indirizzo di pubblicazione.
+### Importante sulla sicurezza
 
-Il modello è **`@cf/qwen/qwen3.8-27b`** tramite il binding `env.AI` del Cloudflare Worker in `cloudflare-worker/`. Le fotografie vengono inviate a Cloudflare **solo quando scegli esplicitamente Leggi con IA**; l'archivio resta locale. La lettura reale va sempre verificata: una IA può sbagliare anche quando il totale coincide.
+La PWA ospitata su GitHub Pages e l'endpoint del Worker restano tecnicamente pubblici.
+Il controllo dell'header `Origin` limita le chiamate dei browser ma **non autentica** i
+client: richieste da strumenti esterni possono falsificarlo. I limiti Cloudflare
+mitigano gli abusi, ma sono approssimativi e distribuiti, **non garantiscono
+esclusività dell'accesso**. Per impedire completamente l'accesso di terzi sarebbe
+necessario introdurre un'autenticazione, almeno una volta per dispositivo.
 
-**Guida completa, dalla pubblicazione alla configurazione gratuita:** [GUIDA_IPHONE.md](GUIDA_IPHONE.md).
+Scegliendo il piano **Workers Free**, la quota gratuita Workers AI è di 10.000 Neurons
+al giorno e poi si interrompe senza addebiti automatici. Le Neurons non equivalgono
+al numero di scontrini. Non attivare Workers Paid se vuoi restare senza costi.
+
+Il modello IA è `@cf/qwen/qwen3.8-27b`. Le foto sono inviate a Cloudflare **solo
+quando si preme “Calcola con ParsmeAI”**. I risultati vanno sempre verificati.
+
+## Aggiornamento
+
+**Prima aggiorna il Worker Cloudflare**, quindi i file GitHub Pages: la nuova app
+non deve chiamare il vecchio Worker che richiede il codice di accesso.
+
+La guida operativa completa è in [GUIDA_IPHONE.md](GUIDA_IPHONE.md).
 
 ### Sviluppo locale
 
@@ -25,16 +46,19 @@ npm.cmd test
 npm.cmd run build
 ```
 
-Per pubblicare, effettua il push sul ramo `main` del repository `LkMcoding/ParsMea-iPhone`: la GitHub Action compila e distribuisce `dist` su GitHub Pages.
-
-Per il Worker:
+Per il Worker, dalla cartella `cloudflare-worker`:
 
 ```powershell
-cd cloudflare-worker
 npm.cmd install
 npx.cmd wrangler login
 npx.cmd wrangler deploy
-npx.cmd wrangler secret put PARSMEA_ACCESS_CODE
 ```
 
-Il codice segreto inserito deve avere almeno 16 caratteri e **non va mai salvato su GitHub**. Il piano Workers Free ha quote giornaliere limitate e non prevede addebiti automatici oltre quota, ma le condizioni Cloudflare possono variare. Non scegliere il piano Paid se vuoi un servizio completamente gratuito.
+Non serve più `wrangler secret put PARSMEA_ACCESS_CODE`: la versione 2.1 non usa
+quella variabile, pur lasciando intatto l'eventuale vecchio secret nel dashboard.
+
+Il deploy di Wrangler applica i binding `AI`, `IP_RATE_LIMITER` e
+`GLOBAL_RATE_LIMITER` dal file `wrangler.toml` allo stesso Worker esistente.
+
+La GitHub Action su `main` pubblica la PWA nello stesso indirizzo:
+`https://lkmcoding.github.io/ParsMea-iPhone/`.

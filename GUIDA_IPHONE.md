@@ -1,42 +1,31 @@
-# ParsMea iPhone 2.0.1 AI Free — Guida passo passo
+# ParsMea iPhone 2.1 — guida di aggiornamento
 
-**Aggiornamento dalla 2.0.0:** è stato corretto il calcolo degli sconti IA. Se hai già configurato Cloudflare, **non devi rifare il Worker, il binding o il codice segreto**. Aggiorna soltanto il repository GitHub e verifica sul telefono la versione v2.0.1.
+**Obiettivo:** il pulsante **Calcola con ParsmeAI** deve leggere uno scontrino
+su ogni dispositivo senza inserire password, indirizzi web o altre impostazioni.
+Il collegamento usa il Worker Cloudflare che hai già creato.
 
-ParsMea resta **una web app installabile da Safari**, senza App Store e con ticket, foto, partecipanti e divisioni conservati **sul tuo iPhone**. Questa versione aggiunge un pulsante **Leggi con IA** per gli scontrini difficili da riconoscere con l'OCR tradizionale.
+## 0. Salva prima una copia delle spese
 
-Per usare l'IA gratuitamente, occorre un piccolo servizio personale su **Cloudflare Workers AI Free**. Non serve una carta di credito né un abbonamento a pagamento **se scegli e mantieni il piano Workers Free**. Il limite è **10.000 neurons al giorno**, non 10.000 foto. Quando la quota finisce, l'IA smette di rispondere fino al rinnovo della quota; puoi continuare a usare l'OCR locale. Le quote e i modelli possono cambiare in futuro: verifica sempre il pannello Cloudflare.
+1. Apri ParsMea sull'iPhone dove hai già dati.
+2. Usa **Esporta backup** e salva il file JSON nell'app File.
+3. Non eliminare la PWA esistente e non cancellare i dati di Safari.
+4. Pubblica l'aggiornamento **nello stesso repository e allo stesso URL**.
 
-## 0. Prima di aggiornare: metti in salvo le spese
+Foto e spese restano nell'archivio locale `parsmea-iphone-v1` di ciascun dispositivo.
+La nuova versione non importa automaticamente dati da un altro telefono: per
+trasferirli si usa backup/ripristino. La funzione IA ha bisogno di Internet.
 
-1. Sul tuo iPhone apri ParsMea attuale.
-2. Premi **Esporta backup** e salva il JSON nell'app File.
-3. Non eliminare la vecchia app e **non cancellare i dati di Safari**.
+## 1. Aggiorna il Worker Cloudflare (una sola volta)
 
-L'archivio mantiene lo stesso identificativo `parsmea-iphone-v1`: **non viene azzerato** e non viene creato un nuovo archivio. Per ritrovare i dati devi pubblicare tutto **sullo stesso repository e allo stesso URL** della versione precedente.
+**Prima il Worker, poi GitHub.** Il Worker attuale richiede una password;
+la nuova app non la invia più. I due aggiornamenti devono quindi essere
+effettuati in quest'ordine.
 
-## 1. Pubblica la nuova PWA su GitHub (una volta)
-
-1. Estrai lo ZIP `ParsMea_iPhone_2_0_1_AI_Sconti_GitHub.zip` sul PC.
-2. Apri il repository GitHub già esistente **`LkMcoding/ParsMea-iPhone`**.
-3. Aggiorna la radice del repository con **i file contenuti nella cartella `ParsMea-iPhone`**, inclusi `src`, `public`, `package.json`, `package-lock.json` e `.github/workflows/iphone-pages.yml`.
-4. Non caricare la cartella esterna come sottocartella, `node_modules`, `dist`, foto personali o codici segreti.
-5. Esegui il commit su `main`. In GitHub **Settings → Pages → Build and deployment → Source** deve essere `GitHub Actions`.
-6. Attendi la spunta verde in **Actions → Pubblica ParsMea iPhone**.
-7. Apri **https://lkmcoding.github.io/ParsMea-iPhone/** e controlla che nella barra laterale compaia **v2.0.1 AI Free**.
-
-L'app resta utilizzabile come prima anche senza Cloudflare: **OCR locale**, cartelle, ticket, divisioni e backup continuano a funzionare.
-
-## 2. Crea Cloudflare gratuito
-
-1. Su PC vai su **https://dash.cloudflare.com/sign-up** e crea un account (o accedi).
-2. Nel pannello Cloudflare controlla che il piano sia **Workers Free**. Non scegliere Workers Paid.
-3. Sul PC Windows deve esserci **Node.js**. Se `node --version` funziona in PowerShell, è già installato.
-
-## 3. Pubblica il servizio IA (una volta, da Windows)
-
-1. Nello ZIP estratto, entra in **`ParsMea-iPhone/cloudflare-worker`**.
-2. Apri la cartella con VS Code. In VS Code scegli **Terminale → Nuovo terminale**. Verifica che il terminale sia proprio nella cartella `cloudflare-worker`, quella che contiene `wrangler.toml`.
-3. Incolla questi comandi **uno alla volta** in PowerShell:
+1. Estrai il pacchetto `ParsMea_iPhone_2_1_ParsmeAI_Auto.zip` sul PC.
+2. Entra nella cartella `ParsMea-iPhone/cloudflare-worker`.
+3. Apri questa cartella in VS Code.
+4. Seleziona **Terminale → Nuovo terminale**.
+5. Incolla i seguenti comandi **uno per volta**:
 
    ```powershell
    npm.cmd install
@@ -44,67 +33,97 @@ L'app resta utilizzabile come prima anche senza Cloudflare: **OCR locale**, cart
    npx.cmd wrangler deploy
    ```
 
-4. Il secondo comando apre Cloudflare nel browser: autorizza Wrangler. Il terzo pubblica il Worker. Se Cloudflare ti chiede di impostare il tuo sottodominio `workers.dev`, segui la procedura gratuita.
-5. Sempre nello stesso terminale, incolla:
+6. Se `wrangler login` apre il browser, accedi allo **stesso account Cloudflare**
+   che contiene `parsmea-ai-free`. Autorizza Wrangler.
+7. Verifica che il deploy mostri il nome **`parsmea-ai-free`** e il suo URL
+   `https://parsmea-ai-free.4df72p7yy4.workers.dev`.
 
-   ```powershell
-   npx.cmd wrangler secret put PARSMEA_ACCESS_CODE
-   ```
+**Non creare un altro Worker:** il comando aggiorna quello esistente grazie al
+nome indicato nel file `wrangler.toml`. Non occorrono più `PARSMEA_ACCESS_CODE`
+né chiavi nel repository. La vecchia variabile segreta sul tuo account Cloudflare
+può restare salvata, ma il codice 2.1 non la utilizza.
 
-6. Ti chiederà un valore: **crea un codice lungo almeno 16 caratteri**, possibilmente 20–30 caratteri casuali. Salvalo in modo sicuro sul telefono. Questo è il tuo codice personale di accesso all'IA. **Non scriverlo su GitHub, non mandarlo in chat e non inserirlo in `wrangler.toml`.**
-7. Ricopia l'URL pubblicato nel risultato di `wrangler deploy`, tipicamente:
+### Controlla i tre binding
 
-   ```text
-   https://parsmea-ai-free.TUO-SOTTODOMINIO.workers.dev
-   ```
+Nel dashboard Cloudflare, **Workers & Pages → parsmea-ai-free → Settings → Bindings**,
+devi avere:
 
-   Non usare l'esempio letteralmente: il sottodominio vero viene mostrato da Cloudflare.
+| Nome del binding | Tipo | Funzione |
+|---|---|---|
+| `AI` | Workers AI | Legge le foto |
+| `IP_RATE_LIMITER` | Rate Limiting | Massimo 6 richieste ogni 60 secondi per IP |
+| `GLOBAL_RATE_LIMITER` | Rate Limiting | Massimo 20 richieste ogni 60 secondi per datacenter |
 
-Se cambi il codice in futuro, riesegui `npx.cmd wrangler secret put PARSMEA_ACCESS_CODE`. Il Worker consente le richieste solo dal sito `https://lkmcoding.github.io` e verifica il codice segreto.
+I due rate limiter vengono dichiarati in `wrangler.toml` e distribuiti da
+`wrangler deploy`. Se mancano, il Worker **non consuma quota AI** e risponde
+con un messaggio che invita a completare l'installazione.
 
-## 4. Attiva l'IA su iPhone
+**Nota di sicurezza:** l'endpoint non ha login. Il controllo di origine e i
+limiti di frequenza scoraggiano gli abusi ma non rendono l'IA privata.
+Un client esterno potrebbe imitare l'origine della PWA. I rate limit Cloudflare
+sono approssimativi e funzionano per località: non sono un limite mondiale rigido.
 
-1. Apri ParsMea aggiornato da Safari o dalla schermata Home.
-2. Apri un ticket contenente una foto o un PDF dello scontrino.
-3. Premi **⚙ Configura IA gratuita**.
-4. Incolla l'**URL Cloudflare** ottenuto al passaggio 3 e premi **Salva indirizzo IA**.
-5. Nel campo **Codice segreto IA**, incolla il codice creato al passaggio 3. Non viene memorizzato dall'app: ti verrà richiesto nuovamente al riavvio.
-6. Premi **✨ Leggi con IA e dividi spesa** e attendi. Serve Internet.
-7. Nella schermata **Prodotti riconosciuti**, controlla e correggi ogni articolo e prezzo sulla foto. Puoi aggiungere e rimuovere prodotti e **correggere il totale complessivo stampato**.
-8. L'IA non permette di confermare finché **somma dei prodotti e totale dello scontrino non coincidono**. Quando sei certo, spunta la casella di verifica e premi **Conferma prodotti e dividi spesa**.
+## 2. Aggiorna ParsMea su GitHub (una sola volta)
 
-La foto di ogni scansione IA viene **inviata a Cloudflare** per essere letta: non rimane esclusivamente sul tuo telefono durante quell'operazione. Il tuo archivio personale, invece, rimane in IndexedDB sul dispositivo; il Worker non contiene un database di foto e non le registra intenzionalmente. Il modello selezionato su Workers AI è documentato con **zero data retention** per il contenuto fornito.
+1. Vai nel repository GitHub esistente **`LkMcoding/ParsMea-iPhone`**.
+2. Aggiorna i file alla radice con quelli della cartella `ParsMea-iPhone` dello ZIP,
+   mantenendo `src`, `public`, `cloudflare-worker`, `package.json`,
+   `package-lock.json` e `.github/workflows/iphone-pages.yml`.
+3. Non pubblicare `node_modules`, `dist`, file `.env`, codici segreti o foto personali.
+4. Conferma le modifiche sul ramo `main`.
+5. Apri **Actions → Pubblica ParsMea iPhone** e aspetta la spunta verde.
+6. Apri `https://lkmcoding.github.io/ParsMea-iPhone/` e verifica che la
+   versione nella barra laterale sia **`v2.1 ParsmeAI`**.
 
-## 5. Prova sullo scontrino Lidl
+Se l'app installata mostra ancora la vecchia versione, apri prima il sito da
+Safari, attendi il caricamento, chiudi e riapri la PWA. La cache offline
+si aggiorna senza eliminare l'archivio locale.
 
-Con la fotografia Lidl del **31/10/2026**, i valori da verificare sono:
+## 3. Usalo da qualsiasi dispositivo
 
-- **10 articoli** (lo shopper costa 0,10 €).
-- **12 rustici wurstel**: 2,04 € prima della promozione, **1,99 € netti** dopo 0,05 € di sconto.
-- **Totale complessivo: 21,87 €**.
-- **Pagamento elettronico 1,87 €** e **ticket non riscosso 20,00 €** sono modalità di pagamento, **non** articoli.
+1. Apri ParsMea.
+2. Apri un ticket con una o più foto dello scontrino, massimo 3 pagine.
+3. Premi **Calcola con ParsmeAI**.
+4. Aspetta l'estrazione dei prodotti.
+5. Controlla prodotti, prezzi, sconti e totale confrontandoli con la fotografia.
+6. Correggi eventuali errori, conferma i risultati e dividi la spesa.
 
-Non è possibile garantire che l'IA riconosca perfettamente tutte le foto; proprio per questo la verifica degli importi è obbligatoria. La prima prova **reale online** va svolta dopo aver pubblicato il tuo Worker.
+**Non devi più aprire Configura IA, inserire l'URL del Worker o digitare
+una password**, nemmeno installando l'app su un altro iPhone o PC.
 
-## 6. Se qualcosa non funziona
+Le fotografie selezionate vengono inviate a Cloudflare per l'analisi;
+l'archivio delle spese e i dati delle divisioni restano sul dispositivo.
 
-| Messaggio o problema | Come risolvere |
+## 4. Quota gratuita e possibili messaggi
+
+Cloudflare Workers AI Free offre **10.000 Neurons al giorno**, non 10.000
+scontrini. Le richieste oltre quota sono rifiutate anziché addebitate sul piano
+Free; si può sempre tornare all'OCR locale. Non attivare il piano Paid.
+
+| Messaggio | Cosa fare |
 |---|---|
-| “Codice IA errato” (401) | Rimetti esattamente il codice salvato al passo 3, oppure ricrealo con `wrangler secret put`. |
-| “Cloudflare non configurato” (503) | Ricontrolla che `PARSMEA_ACCESS_CODE` sia stato creato nel Worker giusto e che in `wrangler.toml` ci sia il binding `[ai]`. |
-| “Quota gratuita esaurita” (429) | Riprova il giorno successivo (quota giornaliera) o usa **OCR locale**. Non passare a un piano a pagamento se vuoi zero spese. |
-| “Non raggiungo il Worker” | Verifica connessione Internet, URL esatto `https://...workers.dev`, nome del Worker e sua pubblicazione. |
-| App vecchia nella schermata Home | Chiudi del tutto la PWA, visita prima il link in Safari e riaprila. Attendi il nuovo aggiornamento. |
-| Non riconosce il totale | Premi **✎ Correggi il totale stampato** e inserisci il valore vero; correggi anche i prodotti per far coincidere le somme. |
-| Foto sfocate o stampate sul retro | Scatta una foto più ravvicinata con fondo uniforme o usa la scansione documenti dell'iPhone. |
+| Troppe analisi in poco tempo | Aspetta circa un minuto e riprova |
+| Quota IA gratuita esaurita | Riprova dopo il rinnovo giornaliero o usa OCR locale |
+| ParsmeAI non è ancora pronto | Il Worker non ha tutti e tre i binding: ripeti il deploy dal passo 1 |
+| ParsmeAI non raggiungibile | Controlla Internet e lo stato di Cloudflare |
+| L'IA non interpreta lo scontrino | Scatta foto più nitide o usa OCR locale |
+| La somma non coincide col totale | Controlla ogni articolo e gli sconti; non inventare un conguaglio |
 
-## Per sviluppatori e sicurezza
+Se premi **Visit** direttamente sul Worker nel dashboard e vedi
+`{"error":"Origine non autorizzata."}`, è normale: il Worker accetta solo
+richieste POST previste dall'app. La prova reale va fatta da ParsMea.
 
-- I file PWA sono in `src/` e `public/`, il Worker in `cloudflare-worker/`.
-- Il Worker usa il modello **`@cf/qwen/qwen3.8-27b`**. Non serve una API key del provider nel codice pubblico di GitHub Pages; la chiamata AI usa il binding del Worker. Il codice accesso personale è un secret Cloudflare.
-- Il modello e il servizio restano soggetti alla disponibilità, ai limiti e alle condizioni del piano gratuito Cloudflare.
-- Per ricompilare la PWA: `npm.cmd ci`, `npm.cmd test`, `npm.cmd run build` nella cartella `ParsMea-iPhone`.
-- Per testare il Worker senza usare la quota online: `npm.cmd test` nella cartella `cloudflare-worker`.
-- Non eseguire `npm.cmd run desktop`: questa versione è una PWA, non Electron.
+## 5. Verifica dei dati e privacy
 
-Documentazione ufficiale: [Workers AI prezzi](https://developers.cloudflare.com/workers-ai/platform/pricing/), [Qwen vision](https://developers.cloudflare.com/workers-ai/models/qwen3.8-27b/), [Workers AI binding](https://developers.cloudflare.com/workers-ai/get-started/workers-wrangler/), [Segreti Wrangler](https://developers.cloudflare.com/workers/wrangler/commands/workers/).
+- Mantieni la PWA nell'**URL originario**: un URL diverso separerebbe i dati locali.
+- Per prudenza esporta un backup prima di aggiornare.
+- L'IA può sbagliare anche quando la somma dei prodotti coincide col totale.
+- Il modello è `@cf/qwen/qwen3.8-27b`.
+- L'app non contiene segreti. Il binding `env.AI` esiste solo sul Worker Cloudflare.
+- La protezione anti-abuso riduce il rischio di consumo della quota, ma non è
+  un'autenticazione. Per un accesso esclusivo servirebbe un login o un
+  abbinamento iniziale dei dispositivi.
+
+Documentazione Cloudflare: [Workers AI — prezzi](https://developers.cloudflare.com/workers-ai/platform/pricing/),
+[Rate Limiting binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/),
+[Workers Free — limiti](https://developers.cloudflare.com/workers/platform/limits/).
