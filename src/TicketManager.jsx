@@ -1506,18 +1506,6 @@ export default function TicketManager({
 
                 {/* OCR */}
 
-                <div style={{
-                  background: '#f4f2ff', border: '1px solid #ddd7fc',
-                  borderRadius: 12, padding: 14, marginBottom: 14
-                }}>
-                  <strong style={{ color: '#5546ba' }}>✨ ParsmeAI · quota gratuita</strong>
-                  <p style={{ margin: '7px 0', fontSize: 12, color: '#606b85' }}>
-                    ParsmeAI è già pronto su ogni dispositivo: non servono password né configurazioni.
-                    Le foto vengono inviate a Cloudflare solo quando premi “Calcola con ParsmeAI”.
-                    L'archivio e le divisioni rimangono su questo dispositivo.
-                  </p>
-                </div>
-
                 <button
                   className="primary-button"
                   style={{
