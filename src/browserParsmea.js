@@ -1,6 +1,7 @@
 // ParsMea iPhone: implementazione browser delle API Electron.
 // I documenti e le divisioni restano sul dispositivo (IndexedDB).
 import { calculateSplit } from './splitMath.js'
+import { recognizeAiReceipt } from './receiptAi.js'
 
 const DB_NAME = 'parsmea-iphone-v1'
 const DB_VERSION = 1
@@ -365,14 +366,19 @@ async function saveSplit(data) {
   return split
 }
 
-async function recognize(ticketId) {
+async function recognize(ticketId, options = {}) {
   await getTicket(ticketId)
   const attachments = await readByIndex('attachments', 'ticketId', ticketId)
   if (!attachments.length) throw new Error('Non ci sono immagini o PDF nel ticket.')
   attachments.sort((a, b) => a.position - b.position)
   const { recognizeBrowserReceipt, buildCandidate, mergeOcrPages } = await import('./receiptOcr.js')
   const pdfCount = attachments.filter((file) => file.mimeType === 'application/pdf').length
-  if (!pdfCount) return recognizeBrowserReceipt(attachments.map((file) => file.blob))
+  if (!pdfCount) {
+    if (options.mode === 'ai') {
+      return recognizeAiReceipt(attachments.map((file) => file.blob), options.endpoint, options.accessCode)
+    }
+    return recognizeBrowserReceipt(attachments.map((file) => file.blob))
+  }
 
   const { extractBrowserPdfText, renderBrowserPdfPages } = await import('./browserPdfReceipt.js')
 
@@ -399,6 +405,10 @@ async function recognize(ticketId) {
     const pages = await renderBrowserPdfPages(file.blob)
     pdfPageCount += pages.length
     sources.push(...pages)
+  }
+  if (options.mode === 'ai') {
+    const result = await recognizeAiReceipt(sources, options.endpoint, options.accessCode)
+    return { ...result, pdfPageCount }
   }
   const result = await recognizeBrowserReceipt(sources)
   return { ...result, pdfPageCount, recognitionMode: 'ocr' }

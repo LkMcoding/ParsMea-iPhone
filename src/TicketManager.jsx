@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import ExpenseSplitter from './ExpenseSplitter.jsx'
+import { AI_ENDPOINT_STORAGE_KEY, sanitizeAiEndpoint } from './receiptAi.js'
 
 // ========================================
 // FUNZIONI DI SUPPORTO
@@ -176,6 +177,11 @@ export default function TicketManager({
   const [ocrDiscountTotalCents, setOcrDiscountTotalCents] = useState(0)
   const [ocrAppliedDiscounts, setOcrAppliedDiscounts] = useState([])
   const [ocrUnresolvedDiscounts, setOcrUnresolvedDiscounts] = useState([])
+  const [aiEndpoint, setAiEndpoint] = useState(() => localStorage.getItem(AI_ENDPOINT_STORAGE_KEY) || '')
+  const [aiAccessCode, setAiAccessCode] = useState('')
+  const [aiConfigOpen, setAiConfigOpen] = useState(false)
+  const [aiConfigError, setAiConfigError] = useState('')
+  const [aiReviewConfirmed, setAiReviewConfirmed] = useState(false)
 
   // ========================================
   // DIVISIONE DELLA SPESA
@@ -652,7 +658,7 @@ export default function TicketManager({
   // RICONOSCIMENTO OCR
   // ========================================
 
-  async function runOcr() {
+  async function runOcr(mode = 'local') {
     if (!selectedTicket) {
       return
     }
@@ -663,7 +669,10 @@ export default function TicketManager({
 
     try {
       const result = await window.parsmea.ocr.recognize(
-        selectedTicket.id
+        selectedTicket.id,
+        mode === 'ai' ? {
+          mode: 'ai', endpoint: aiEndpoint, accessCode: aiAccessCode
+        } : { mode: 'local' }
       )
 
       const items = result.items.map((item) => ({
@@ -679,6 +688,7 @@ export default function TicketManager({
       setOcrNeedsReview(Boolean(result.needsReview))
       setOcrCorrectionNotes(result.correctionNotes || [])
       setRecognitionMode(result.recognitionMode || 'ocr')
+      setAiReviewConfirmed(false)
 
       setOcrDiscountTotalCents(
         result.discountTotalCents || 0
@@ -709,6 +719,7 @@ export default function TicketManager({
   // ========================================
 
   function updateOcrItem(itemId, field, value) {
+    if (recognitionMode === 'ai') setAiReviewConfirmed(false)
     setOcrItems((current) =>
       current.map((item) =>
         item.id === itemId
@@ -722,6 +733,7 @@ export default function TicketManager({
   }
 
   function addManualItem() {
+    if (recognitionMode === 'ai') setAiReviewConfirmed(false)
     const id = `manual-${Date.now()}-${Math.random()}`
 
     setOcrItems((current) => [
@@ -736,6 +748,7 @@ export default function TicketManager({
   }
 
   function removeOcrItem(itemId) {
+    if (recognitionMode === 'ai') setAiReviewConfirmed(false)
     setOcrItems((current) =>
       current.filter(
         (item) => item.id !== itemId
@@ -794,6 +807,11 @@ export default function TicketManager({
       return
     }
 
+    if (recognitionMode === 'ai' && !aiReviewConfirmed) {
+      setOcrError('Conferma di aver controllato i prodotti sulla foto originale prima di procedere.')
+      return
+    }
+
     const cleanedItems = ocrItems.map((item) => ({
       id: item.id,
       name: String(item.name || '').trim(),
@@ -814,10 +832,11 @@ export default function TicketManager({
       return
     }
 
-    if (
-      receiptTotalCents !== null &&
-      !totalsMatch
-    ) {
+    if (recognitionMode === 'ai' && !totalsMatch) {
+      setOcrError('Con l’IA devi prima correggere prodotti e totale finché coincidono. Non verrà aggiunta alcuna differenza fittizia.')
+      return
+    }
+    if (receiptTotalCents !== null && !totalsMatch) {
       const confirmed = window.confirm(
         'La somma dei prodotti è diversa dal totale dello scontrino. Vuoi comunque procedere con questi importi?'
       )
@@ -1494,24 +1513,81 @@ export default function TicketManager({
 
                 {/* OCR */}
 
+                <div style={{
+                  background: '#f4f2ff', border: '1px solid #ddd7fc',
+                  borderRadius: 12, padding: 14, marginBottom: 14
+                }}>
+                  <strong style={{ color: '#5546ba' }}>✨ ParsMea AI 2.0 · quota gratuita</strong>
+                  <p style={{ margin: '7px 0', fontSize: 12, color: '#606b85' }}>
+                    Le foto vengono inviate a Cloudflare solo quando scegli “Leggi con IA”.
+                    L'archivio e le divisioni rimangono su questo iPhone.
+                  </p>
+                  <button type="button" className="secondary-button"
+                    onClick={() => setAiConfigOpen((value) => !value)}
+                    style={{ width: '100%', padding: 10 }}>
+                    ⚙ {aiEndpoint ? 'Modifica configurazione IA' : 'Configura IA gratuita'}
+                  </button>
+                  {aiConfigOpen && (
+                    <div style={{ marginTop: 12 }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700 }}>
+                        URL del tuo Cloudflare Worker
+                        <input type="url" value={aiEndpoint}
+                          placeholder="https://parsmea-ai-free.TUONOME.workers.dev"
+                          onChange={(e) => setAiEndpoint(e.target.value)}
+                          style={{ display: 'block', width: '100%', boxSizing: 'border-box', margin: '5px 0 12px', padding: 10 }}/>
+                      </label>
+                      <button className="primary-button" type="button" style={{ width: '100%' }}
+                        onClick={() => {
+                          try {
+                            const url = sanitizeAiEndpoint(aiEndpoint)
+                            localStorage.setItem(AI_ENDPOINT_STORAGE_KEY, url)
+                            setAiEndpoint(url)
+                            setAiConfigError('')
+                            setAiConfigOpen(false)
+                          } catch (e) { setAiConfigError(e.message) }
+                        }}>
+                        Salva indirizzo IA
+                      </button>
+                      {aiConfigError && <p role="alert" style={{ color: '#b82f49' }}>{aiConfigError}</p>}
+                    </div>
+                  )}
+                  {aiEndpoint && (
+                    <label style={{ display: 'block', marginTop: 12, fontSize: 12, fontWeight: 700 }}>
+                      Codice segreto IA (non salvato sul dispositivo)
+                      <input type="password" autoComplete="off" value={aiAccessCode}
+                        placeholder="Il codice creato su Cloudflare, almeno 16 caratteri"
+                        onChange={(e) => setAiAccessCode(e.target.value)}
+                        style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 5, padding: 10 }}/>
+                    </label>
+                  )}
+                </div>
+
                 <button
                   className="primary-button"
                   style={{
                     width: '100%',
                     marginBottom: 12
                   }}
-                  onClick={runOcr}
+                  onClick={() => runOcr('ai')}
                   disabled={
                     ocrLoading ||
                     attachmentsBusy ||
                     attachmentsLoading ||
                     deleting ||
-                    attachments.length === 0
+                    attachments.length === 0 ||
+                    !aiEndpoint || aiAccessCode.length < 16
                   }
                 >
                   {ocrLoading
                     ? 'Analisi dello scontrino in corso...'
-                    : 'Dividi spesa'}
+                    : '✨ Leggi con IA e dividi spesa'}
+                </button>
+
+                <button type="button" className="secondary-button"
+                  style={{ width: '100%', marginBottom: 12 }}
+                  onClick={() => runOcr('local')}
+                  disabled={ocrLoading || attachmentsBusy || attachmentsLoading || deleting || attachments.length === 0}>
+                  Usa OCR locale (senza inviare foto)
                 </button>
 
                 {ocrLoading && (
@@ -1621,7 +1697,9 @@ export default function TicketManager({
               <strong>
                 {recognitionMode === 'pdf-text'
                   ? 'Testo PDF letto direttamente'
-                  : 'Riconoscimento OCR completato'}
+                  : recognitionMode === 'ai'
+                    ? '✨ Lettura con IA completata'
+                    : 'Riconoscimento OCR completato'}
               </strong>
 
               <p style={{
@@ -1631,7 +1709,9 @@ export default function TicketManager({
               }}>
                 {recognitionMode === 'pdf-text'
                   ? 'Prodotti e prezzi estratti direttamente dal testo del PDF, senza OCR.'
-                  : `Attendibilità generale OCR: ${ocrConfidence}%`}
+                  : recognitionMode === 'ai'
+                    ? 'Controlla nomi, prezzi e sconti sulla foto: l’IA può sbagliare anche quando il totale corrisponde.'
+                    : `Attendibilità generale OCR: ${ocrConfidence}%`}
               </p>
 
               {ocrAppliedDiscounts.length > 0 && (
@@ -1954,6 +2034,28 @@ export default function TicketManager({
                 </strong>
               </div>
 
+              {recognitionMode === 'ai' && (
+                <button type="button" className="secondary-button"
+                  style={{ marginBottom: 12 }}
+                  onClick={() => {
+                    const value = window.prompt(
+                      'Totale COMPLESSIVO stampato sullo scontrino (es. 21,87). Non inserire l’importo pagato con carta o buoni.',
+                      receiptTotalCents === null ? '' : centsToInput(receiptTotalCents)
+                    )
+                    if (value === null) return
+                    const corrected = inputToCents(value)
+                    if (corrected === null || corrected < 0) {
+                      setOcrError('Totale non valido: inserisci un importo come 21,87.')
+                      return
+                    }
+                    setReceiptTotalCents(corrected)
+                    setAiReviewConfirmed(false)
+                    setOcrError('')
+                  }}>
+                  ✎ Correggi il totale stampato
+                </button>
+              )}
+
               {hasInvalidPrices ? (
                 <p style={{ color: '#d64b58' }}>
                   Controlla i prezzi:
@@ -1967,7 +2069,9 @@ export default function TicketManager({
               ) : totalsMatch ? (
                 <p style={{ color: ocrNeedsReview ? '#b47d23' : '#27996b' }}>
                   {ocrNeedsReview
-                    ? '⚠ La somma corrisponde, ma alcuni caratteri OCR possono essere errati. Verifica ogni prezzo prima di salvare.'
+                    ? recognitionMode === 'ai'
+                      ? '✓ I totali corrispondono, ma controlla ogni articolo sulla foto prima di confermare.'
+                      : '⚠ La somma corrisponde, ma alcuni caratteri OCR possono essere errati. Verifica ogni prezzo prima di salvare.'
                     : '✓ I totali corrispondono.'}
                 </p>
               ) : (
@@ -1984,7 +2088,7 @@ export default function TicketManager({
                   </p>
                 </div>
               )}
-              {ocrNeedsReview && !totalsMatch && (
+              {ocrNeedsReview && !totalsMatch && recognitionMode !== 'ai' && (
                 <p role="alert" style={{ color: '#a12d40', marginTop: 12 }}>
                   La fotografia è stata analizzata con più filtri. Il risultato va
                   comunque controllato: confronta i prodotti con lo scontrino
@@ -2018,7 +2122,7 @@ export default function TicketManager({
                 fontWeight: 600,
                 fontSize: 12
               }}>
-                Visualizza testo OCR originale
+                {recognitionMode === 'ai' ? 'Visualizza risposta IA originale' : 'Visualizza testo OCR originale'}
               </summary>
 
               <pre style={{
@@ -2056,10 +2160,22 @@ export default function TicketManager({
               </p>
             )}
 
+            {recognitionMode === 'ai' && (
+              <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start',
+                marginTop: 16, padding: 14, borderRadius: 12,
+                background: '#f4f2ff', border: '1px solid #ddd7fc', fontWeight: 700 }}>
+                <input type="checkbox" checked={aiReviewConfirmed}
+                  onChange={(event) => setAiReviewConfirmed(event.target.checked)}
+                  style={{ width: 22, height: 22, flexShrink: 0 }}/>
+                Ho confrontato prodotti, importi, sconti e totale con la foto originale.
+              </label>
+            )}
+
             <button
               type="button"
               className="primary-button"
               onClick={openSplitter}
+              disabled={recognitionMode === 'ai' && (!aiReviewConfirmed || !totalsMatch)}
               style={{
                 width: '100%',
                 marginTop: 12

@@ -1,71 +1,108 @@
-# ParsMea iPhone 1.0.1 — Correzione OCR
+# ParsMea iPhone 2.0.0 AI Free — Guida passo passo
 
-ParsMea per iPhone è una **PWA**: si apre da Safari e si installa nella schermata Home senza App Store.
+ParsMea resta **una web app installabile da Safari**, senza App Store e con ticket, foto, partecipanti e divisioni conservati **sul tuo iPhone**. Questa versione aggiunge un pulsante **Leggi con IA** per gli scontrini difficili da riconoscere con l'OCR tradizionale.
 
-## Cosa contiene
+Per usare l'IA gratuitamente, occorre un piccolo servizio personale su **Cloudflare Workers AI Free**. Non serve una carta di credito né un abbonamento a pagamento **se scegli e mantieni il piano Workers Free**. Il limite è **10.000 neurons al giorno**, non 10.000 foto. Quando la quota finisce, l'IA smette di rispondere fino al rinnovo della quota; puoi continuare a usare l'OCR locale. Le quote e i modelli possono cambiare in futuro: verifica sempre il pannello Cloudflare.
 
-- Cartelle, partecipanti, ticket, fotografie e PDF.
-- Lettura dei PDF digitali direttamente nel browser; se il totale non corrisponde, OCR sulle pagine PDF come immagini.
-- OCR italiano/inglese sulle foto (JPG, PNG, WEBP) e sui PDF scannerizzati.
-- **Novità 1.0.1:** ritaglio automatico dello scontrino nella fotografia, due filtri di contrasto, rilettura dei prezzi poco chiari e riconoscimento migliorato di sconti, totali e pagamenti.
-- Gli sconti dedotti dal confronto con il totale sono **stime evidenziate**: verificare i prezzi sullo scontrino prima di salvare la ripartizione.
-- Correzione delle checkbox accanto ai nomi nella schermata di divisione, anche su iPhone.
-- Sconti, ripartizione tra persone, salvataggio delle divisioni.
-- Archivio locale sul dispositivo (IndexedDB + localStorage), backup manuale JSON e ripristino con conferma.
-- Schermata Home, icone e cache dell'interfaccia per funzionare come app web installata.
+## 0. Prima di aggiornare: metti in salvo le spese
 
-## Come aggiornare ParsMea iPhone senza perdere i dati
+1. Sul tuo iPhone apri ParsMea attuale.
+2. Premi **Esporta backup** e salva il JSON nell'app File.
+3. Non eliminare la vecchia app e **non cancellare i dati di Safari**.
 
-**Importante:** pubblica la versione 1.0.1 **nello stesso repository e allo stesso indirizzo GitHub Pages** della precedente, senza cambiare dominio, nome del repository o percorso. L'archivio locale mantiene il nome `parsmea-iphone-v1`.
+L'archivio mantiene lo stesso identificativo `parsmea-iphone-v1`: **non viene azzerato** e non viene creato un nuovo archivio. Per ritrovare i dati devi pubblicare tutto **sullo stesso repository e allo stesso URL** della versione precedente.
 
-1. Apri la versione attuale sul tuo iPhone.
-2. Usa **Esporta backup** e salva il file JSON nell'app File: è una precauzione consigliata prima di pubblicare.
-3. Pubblica i nuovi sorgenti sullo stesso repository GitHub.
-4. Su Safari riapri https://lkmcoding.github.io/ParsMea-iPhone/, attendi il nuovo caricamento, poi riapri l'app dalla schermata Home. Se vedi ancora la versione precedente, chiudi del tutto la PWA e riaprila. Nella barra laterale verifica la scritta **v1.0.1**.
-5. Verifica che ticket, cartelle e divisioni precedenti siano ancora presenti. Non cancellare “Dati siti web” né eliminare l'app per forzare l'aggiornamento.
+## 1. Pubblica la nuova PWA su GitHub (una volta)
 
-## Caricare i file su GitHub
+1. Estrai lo ZIP `ParsMea_iPhone_2_0_AI_Free_GitHub_Cloudflare.zip` sul PC.
+2. Apri il repository GitHub già esistente **`LkMcoding/ParsMea-iPhone`**.
+3. Aggiorna la radice del repository con **i file contenuti nella cartella `ParsMea-iPhone`**, inclusi `src`, `public`, `package.json`, `package-lock.json` e `.github/workflows/iphone-pages.yml`.
+4. Non caricare la cartella esterna come sottocartella, `node_modules`, `dist`, foto personali o codici segreti.
+5. Esegui il commit su `main`. In GitHub **Settings → Pages → Build and deployment → Source** deve essere `GitHub Actions`.
+6. Attendi la spunta verde in **Actions → Pubblica ParsMea iPhone**.
+7. Apri **https://lkmcoding.github.io/ParsMea-iPhone/** e controlla che nella barra laterale compaia **v2.0.0 AI Free**.
 
-1. Estrai lo ZIP `ParsMea_iPhone_1_0_1_OCR_FIX_GitHub.zip`.
-2. Aggiorna il repository **ParsMea-iPhone** già esistente, copiando **il contenuto** della cartella estratta nella radice del repository. Non creare una cartella `ParsMea-iPhone` annidata nel repository.
-3. Includi anche `.github/workflows/iphone-pages.yml` e `package-lock.json`. **Non** caricare `node_modules`, `dist`, ricevute personali o backup JSON.
-4. Pubblica/effettua il push sul ramo `main`.
-5. In GitHub, **Settings → Pages → Build and deployment → Source** deve essere `GitHub Actions`.
-6. In **Actions**, attendi che `Pubblica ParsMea iPhone` finisca con il segno verde.
+L'app resta utilizzabile come prima anche senza Cloudflare: **OCR locale**, cartelle, ticket, divisioni e backup continuano a funzionare.
 
-Il file `vite.config.js` ricava il percorso GitHub Pages dal nome effettivo del repository durante la build.
+## 2. Crea Cloudflare gratuito
 
-## Installazione su iPhone
+1. Su PC vai su **https://dash.cloudflare.com/sign-up** e crea un account (o accedi).
+2. Nel pannello Cloudflare controlla che il piano sia **Workers Free**. Non scegliere Workers Paid.
+3. Sul PC Windows deve esserci **Node.js**. Se `node --version` funziona in PowerShell, è già installato.
 
-1. Apri l'URL GitHub Pages del repository in Safari.
-2. Premi **Condividi → Aggiungi alla schermata Home**.
-3. Abilita “Apri come app web” se compare, poi conferma.
+## 3. Pubblica il servizio IA (una volta, da Windows)
 
-## Prove consigliate
+1. Nello ZIP estratto, entra in **`ParsMea-iPhone/cloudflare-worker`**.
+2. Apri la cartella con VS Code. In VS Code scegli **Terminale → Nuovo terminale**. Verifica che il terminale sia proprio nella cartella `cloudflare-worker`, quella che contiene `wrangler.toml`.
+3. Incolla questi comandi **uno alla volta** in PowerShell:
 
-- Verifica che la checkbox sia immediatamente a sinistra di “Francesco” e “Luca”, senza testo sovrapposto.
-- Prova il PDF Esselunga: attesi **214,26 €** e sconti **22,64 €**.
-- Prova la fotografia Lidl (31/10/2026): attesi **10 prodotti e totale 21,87 €**. Verifica manualmente il primo prezzo **0,10 €** e lo sconto **0,05 €**: sui documenti termici possono rimanere ambiguità.
-- Prova fotografia, PDF scannerizzato, divisione e riapertura del ticket.
-- Esporta un backup. Il pulsante Ripristina **sostituisce** i dati attuali: usalo solo se necessario.
+   ```powershell
+   npm.cmd install
+   npx.cmd wrangler login
+   npx.cmd wrangler deploy
+   ```
 
-## Limiti attuali
+4. Il secondo comando apre Cloudflare nel browser: autorizza Wrangler. Il terzo pubblica il Worker. Se Cloudflare ti chiede di impostare il tuo sottodominio `workers.dev`, segui la procedura gratuita.
+5. Sempre nello stesso terminale, incolla:
 
-- Il primo OCR con Tesseract richiede rete per scaricare i modelli linguistici. Non è garantito l'OCR offline prima che siano in cache.
-- La nuova doppia analisi OCR richiede più tempo, soprattutto al primo utilizzo. Non chiudere l'app durante la lettura.
-- Su iPhone, un PDF lungo o scannerizzato può impiegare più tempo ed esaurire la memoria; limite 25 pagine per PDF e 30 MB per file.
-- HEIC non supportato in questa versione; scegli JPEG/PNG o esporta la foto.
-- I dati iPhone restano su iPhone: nessuna sincronizzazione automatica con SQLite della versione Windows.
-- La build completa deve essere verificata dall'azione GitHub, che esegue `npm ci`, test e build. Il sistema di preparazione non ha potuto installare i pacchetti npm da rete; i test JS e una prova OCR sulla fotografia Lidl sono stati eseguiti, ma il rendering Safari richiede verifica su dispositivo.
+   ```powershell
+   npx.cmd wrangler secret put PARSMEA_ACCESS_CODE
+   ```
 
-## Prova facoltativa su Windows
+6. Ti chiederà un valore: **crea un codice lungo almeno 16 caratteri**, possibilmente 20–30 caratteri casuali. Salvalo in modo sicuro sul telefono. Questo è il tuo codice personale di accesso all'IA. **Non scriverlo su GitHub, non mandarlo in chat e non inserirlo in `wrangler.toml`.**
+7. Ricopia l'URL pubblicato nel risultato di `wrangler deploy`, tipicamente:
 
-Apri PowerShell nella cartella sorgente:
+   ```text
+   https://parsmea-ai-free.TUO-SOTTODOMINIO.workers.dev
+   ```
 
-```powershell
-npm.cmd install
-npm.cmd run test
-npm.cmd run build
-```
+   Non usare l'esempio letteralmente: il sottodominio vero viene mostrato da Cloudflare.
 
-Questa versione non usa Electron: non eseguire `npm.cmd run desktop`.
+Se cambi il codice in futuro, riesegui `npx.cmd wrangler secret put PARSMEA_ACCESS_CODE`. Il Worker consente le richieste solo dal sito `https://lkmcoding.github.io` e verifica il codice segreto.
+
+## 4. Attiva l'IA su iPhone
+
+1. Apri ParsMea aggiornato da Safari o dalla schermata Home.
+2. Apri un ticket contenente una foto o un PDF dello scontrino.
+3. Premi **⚙ Configura IA gratuita**.
+4. Incolla l'**URL Cloudflare** ottenuto al passaggio 3 e premi **Salva indirizzo IA**.
+5. Nel campo **Codice segreto IA**, incolla il codice creato al passaggio 3. Non viene memorizzato dall'app: ti verrà richiesto nuovamente al riavvio.
+6. Premi **✨ Leggi con IA e dividi spesa** e attendi. Serve Internet.
+7. Nella schermata **Prodotti riconosciuti**, controlla e correggi ogni articolo e prezzo sulla foto. Puoi aggiungere e rimuovere prodotti e **correggere il totale complessivo stampato**.
+8. L'IA non permette di confermare finché **somma dei prodotti e totale dello scontrino non coincidono**. Quando sei certo, spunta la casella di verifica e premi **Conferma prodotti e dividi spesa**.
+
+La foto di ogni scansione IA viene **inviata a Cloudflare** per essere letta: non rimane esclusivamente sul tuo telefono durante quell'operazione. Il tuo archivio personale, invece, rimane in IndexedDB sul dispositivo; il Worker non contiene un database di foto e non le registra intenzionalmente. Il modello selezionato su Workers AI è documentato con **zero data retention** per il contenuto fornito.
+
+## 5. Prova sullo scontrino Lidl
+
+Con la fotografia Lidl del **31/10/2026**, i valori da verificare sono:
+
+- **10 articoli** (lo shopper costa 0,10 €).
+- **12 rustici wurstel**: 2,04 € prima della promozione, **1,99 € netti** dopo 0,05 € di sconto.
+- **Totale complessivo: 21,87 €**.
+- **Pagamento elettronico 1,87 €** e **ticket non riscosso 20,00 €** sono modalità di pagamento, **non** articoli.
+
+Non è possibile garantire che l'IA riconosca perfettamente tutte le foto; proprio per questo la verifica degli importi è obbligatoria. La prima prova **reale online** va svolta dopo aver pubblicato il tuo Worker.
+
+## 6. Se qualcosa non funziona
+
+| Messaggio o problema | Come risolvere |
+|---|---|
+| “Codice IA errato” (401) | Rimetti esattamente il codice salvato al passo 3, oppure ricrealo con `wrangler secret put`. |
+| “Cloudflare non configurato” (503) | Ricontrolla che `PARSMEA_ACCESS_CODE` sia stato creato nel Worker giusto e che in `wrangler.toml` ci sia il binding `[ai]`. |
+| “Quota gratuita esaurita” (429) | Riprova il giorno successivo (quota giornaliera) o usa **OCR locale**. Non passare a un piano a pagamento se vuoi zero spese. |
+| “Non raggiungo il Worker” | Verifica connessione Internet, URL esatto `https://...workers.dev`, nome del Worker e sua pubblicazione. |
+| App vecchia nella schermata Home | Chiudi del tutto la PWA, visita prima il link in Safari e riaprila. Attendi il nuovo aggiornamento. |
+| Non riconosce il totale | Premi **✎ Correggi il totale stampato** e inserisci il valore vero; correggi anche i prodotti per far coincidere le somme. |
+| Foto sfocate o stampate sul retro | Scatta una foto più ravvicinata con fondo uniforme o usa la scansione documenti dell'iPhone. |
+
+## Per sviluppatori e sicurezza
+
+- I file PWA sono in `src/` e `public/`, il Worker in `cloudflare-worker/`.
+- Il Worker usa il modello **`@cf/qwen/qwen3.8-27b`**. Non serve una API key del provider nel codice pubblico di GitHub Pages; la chiamata AI usa il binding del Worker. Il codice accesso personale è un secret Cloudflare.
+- Il modello e il servizio restano soggetti alla disponibilità, ai limiti e alle condizioni del piano gratuito Cloudflare.
+- Per ricompilare la PWA: `npm.cmd ci`, `npm.cmd test`, `npm.cmd run build` nella cartella `ParsMea-iPhone`.
+- Per testare il Worker senza usare la quota online: `npm.cmd test` nella cartella `cloudflare-worker`.
+- Non eseguire `npm.cmd run desktop`: questa versione è una PWA, non Electron.
+
+Documentazione ufficiale: [Workers AI prezzi](https://developers.cloudflare.com/workers-ai/platform/pricing/), [Qwen vision](https://developers.cloudflare.com/workers-ai/models/qwen3.8-27b/), [Workers AI binding](https://developers.cloudflare.com/workers-ai/get-started/workers-wrangler/), [Segreti Wrangler](https://developers.cloudflare.com/workers/wrangler/commands/workers/).

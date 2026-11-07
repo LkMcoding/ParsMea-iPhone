@@ -4,6 +4,50 @@ import { applyReceiptDiscounts } from '../src/receiptDiscounts.js'
 import { calculateSplit, distributeCents } from '../src/splitMath.js'
 import { parseReceiptText, buildCandidate, chooseBestCandidate, inferSingleDiscount } from '../src/receiptOcr.js'
 import { detectReceiptBounds } from '../src/receiptImage.js'
+import { normalizeAiReceipt, sanitizeAiEndpoint } from '../src/receiptAi.js'
+
+test('ParsMea IA: dieci prodotti Lidl con sconto riconosciuto e totale 21,87', () => {
+  const rows = [
+    ['SHOPPER BIODEGRAD.', 10], ['TARTARE DI SCOTTONA', 459],
+    ['SPECK A FETTE', 165], ['AFFETTATO POLLO AFFU', 199],
+    ['CARPACC.CARNE SALADA', 289], ['PROSC.CRUDO EFF.MOSS', 269],
+    ['PIZZA FICHI&GORGONZO', 299], ['12 RUSTICI WUERSTEL', 199],
+    ['PESTO RADIC.SPECK', 149], ['PATE DI CARCIOFI', 149]
+  ]
+  const parsed = normalizeAiReceipt({
+    receipt_total_cents: 2187,
+    items: rows.map(([name, price_cents], index) => ({
+      name, price_cents, discounts: index === 7 ? [{ description: 'Promo rustici', amount_cents: 5 }] : []
+    })),
+    warnings: []
+  })
+  assert.equal(parsed.items.length, 10)
+  assert.equal(parsed.itemsTotalCents, 2187)
+  assert.equal(parsed.receiptTotalCents, 2187)
+  assert.equal(parsed.discountTotalCents, 5)
+  assert.equal(parsed.totalsMatch, true)
+  assert.equal(parsed.needsReview, true)
+})
+
+test('ParsMea IA: non inventa articoli per compensare differenze', () => {
+  const parsed = normalizeAiReceipt({
+    receipt_total_cents: 300,
+    items: [{ name: 'Pane', price_cents: 199 }], warnings: []
+  })
+  assert.equal(parsed.items.length, 1)
+  assert.equal(parsed.itemsTotalCents, 199)
+  assert.equal(parsed.totalsMatch, false)
+  assert.match(parsed.correctionNotes.join(' '), /non coincidono/)
+  assert.throws(() => normalizeAiReceipt({
+    items: [{ name: 'Sospetto', price_cents: '199' }]
+  }), /non valido/)
+})
+
+test('ParsMea IA: endpoint limitato a Workers HTTPS', () => {
+  assert.equal(sanitizeAiEndpoint('https://parsmea.example.workers.dev/'), 'https://parsmea.example.workers.dev')
+  assert.throws(() => sanitizeAiEndpoint('http://parsmea.example.workers.dev'), /HTTPS/)
+  assert.throws(() => sanitizeAiEndpoint('https://example.com'), /Cloudflare/)
+})
 
 test('Scontrino vernice: quattro sconti e totale netto di 2 euro', () => {
   const lines = [
