@@ -44,12 +44,36 @@ export function normalizeAiReceipt(input) {
       name,
       priceCents,
       discounts,
-      discountCents,
-      grossPriceCents: priceCents + discountCents
+      discountCents
     }
   })
   const total = input.receipt_total_cents
   const receiptTotalCents = Number.isSafeInteger(total) && total >= 0 && total <= 20000000 ? total : null
+  const initialItemsTotalCents = items.reduce((sum, item) => sum + item.priceCents, 0)
+
+  // Alcuni modelli restituiscono il prezzo lordo anche quando riconoscono lo
+  // sconto della riga: 2,04 € rustici - 0,05 € promozione = 1,99 € netti.
+  // Applica soltanto gli sconti GIA' associati a un articolo e soltanto se
+  // spiegano esattamente l'intera differenza. Non inventare mai un conguaglio.
+  const grossPricesDetected = receiptTotalCents !== null &&
+    discountTotalCents > 0 &&
+    initialItemsTotalCents - discountTotalCents === receiptTotalCents &&
+    items.every((item) => item.priceCents >= item.discountCents)
+
+  for (const item of items) {
+    if (grossPricesDetected && item.discountCents > 0) {
+      item.grossPriceCents = item.priceCents
+      item.priceCents -= item.discountCents
+    } else {
+      // Qui l'IA sta già fornendo prezzi netti, oppure non abbiamo prove
+      // sufficienti per correggerli: conservarli per la verifica manuale.
+      item.grossPriceCents = item.priceCents + item.discountCents
+    }
+  }
+  if (grossPricesDetected) {
+    notes.push(`Gli sconti riconosciuti (${(discountTotalCents / 100).toFixed(2)} €) sono stati sottratti dagli articoli corrispondenti per riconciliare il totale.`)
+  }
+
   const itemsTotalCents = items.reduce((sum, item) => sum + item.priceCents, 0)
   if (receiptTotalCents === null) notes.push('Totale non leggibile: verifica e inserisci manualmente il totale stampato.')
   else if (itemsTotalCents !== receiptTotalCents) notes.push('ATTENZIONE: somma prodotti e totale dello scontrino non coincidono. Non vengono creati importi per compensare la differenza.')

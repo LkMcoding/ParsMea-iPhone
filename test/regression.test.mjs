@@ -29,6 +29,48 @@ test('ParsMea IA: dieci prodotti Lidl con sconto riconosciuto e totale 21,87', (
   assert.equal(parsed.needsReview, true)
 })
 
+test('ParsMea IA: sconto Lidl su prezzo lordo, 21,92 meno 0,05 uguale 21,87', () => {
+  const prices = [10, 459, 165, 199, 289, 269, 299, 204, 149, 149]
+  const parsed = normalizeAiReceipt({
+    receipt_total_cents: 2187,
+    items: prices.map((price_cents, index) => ({
+      name: index === 7 ? '12 RUSTICI WUERSTEL' : `Prodotto ${index + 1}`,
+      price_cents,
+      discounts: index === 7 ? [{ description: 'Promo rustici', amount_cents: 5 }] : []
+    })),
+    warnings: []
+  })
+  assert.equal(prices.reduce((sum, price) => sum + price, 0), 2192)
+  assert.equal(parsed.items.length, 10)
+  assert.equal(parsed.items[7].grossPriceCents, 204)
+  assert.equal(parsed.items[7].priceCents, 199)
+  assert.equal(parsed.items[7].discountCents, 5)
+  assert.equal(parsed.itemsTotalCents, 2187)
+  assert.equal(parsed.totalsMatch, true)
+})
+
+test('ParsMea IA: non sottrae due volte uno sconto già incluso nel prezzo finale', () => {
+  const parsed = normalizeAiReceipt({
+    receipt_total_cents: 199,
+    items: [{ name: '12 RUSTICI', price_cents: 199,
+      discounts: [{ description: 'Promo', amount_cents: 5 }] }]
+  })
+  assert.equal(parsed.items[0].priceCents, 199)
+  assert.equal(parsed.items[0].grossPriceCents, 204)
+  assert.equal(parsed.totalsMatch, true)
+})
+
+test('ParsMea IA: nessuna compensazione automatica per sconti insufficienti', () => {
+  const parsed = normalizeAiReceipt({
+    receipt_total_cents: 180,
+    items: [{ name: 'Prodotto', price_cents: 204,
+      discounts: [{ description: 'Promo', amount_cents: 5 }] }]
+  })
+  assert.equal(parsed.items[0].priceCents, 204)
+  assert.equal(parsed.itemsTotalCents, 204)
+  assert.equal(parsed.totalsMatch, false)
+})
+
 test('ParsMea IA: non inventa articoli per compensare differenze', () => {
   const parsed = normalizeAiReceipt({
     receipt_total_cents: 300,

@@ -1,5 +1,5 @@
 // Cache delle risorse pubblicate. I dati personali NON entrano nella cache.
-const CACHE_NAME = 'parsmea-iphone-shell-v4-ai'
+const CACHE_NAME = 'parsmea-iphone-shell-v5-ai-discount-fix'
 const BASE = self.registration.scope
 
 function sameAppUrl(value) {

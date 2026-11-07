@@ -1,4 +1,6 @@
-# ParsMea iPhone 2.0.0 AI Free — Guida passo passo
+# ParsMea iPhone 2.0.1 AI Free — Guida passo passo
+
+**Aggiornamento dalla 2.0.0:** è stato corretto il calcolo degli sconti IA. Se hai già configurato Cloudflare, **non devi rifare il Worker, il binding o il codice segreto**. Aggiorna soltanto il repository GitHub e verifica sul telefono la versione v2.0.1.
 
 ParsMea resta **una web app installabile da Safari**, senza App Store e con ticket, foto, partecipanti e divisioni conservati **sul tuo iPhone**. Questa versione aggiunge un pulsante **Leggi con IA** per gli scontrini difficili da riconoscere con l'OCR tradizionale.
 
@@ -14,13 +16,13 @@ L'archivio mantiene lo stesso identificativo `parsmea-iphone-v1`: **non viene az
 
 ## 1. Pubblica la nuova PWA su GitHub (una volta)
 
-1. Estrai lo ZIP `ParsMea_iPhone_2_0_AI_Free_GitHub_Cloudflare.zip` sul PC.
+1. Estrai lo ZIP `ParsMea_iPhone_2_0_1_AI_Sconti_GitHub.zip` sul PC.
 2. Apri il repository GitHub già esistente **`LkMcoding/ParsMea-iPhone`**.
 3. Aggiorna la radice del repository con **i file contenuti nella cartella `ParsMea-iPhone`**, inclusi `src`, `public`, `package.json`, `package-lock.json` e `.github/workflows/iphone-pages.yml`.
 4. Non caricare la cartella esterna come sottocartella, `node_modules`, `dist`, foto personali o codici segreti.
 5. Esegui il commit su `main`. In GitHub **Settings → Pages → Build and deployment → Source** deve essere `GitHub Actions`.
 6. Attendi la spunta verde in **Actions → Pubblica ParsMea iPhone**.
-7. Apri **https://lkmcoding.github.io/ParsMea-iPhone/** e controlla che nella barra laterale compaia **v2.0.0 AI Free**.
+7. Apri **https://lkmcoding.github.io/ParsMea-iPhone/** e controlla che nella barra laterale compaia **v2.0.1 AI Free**.
 
 L'app resta utilizzabile come prima anche senza Cloudflare: **OCR locale**, cartelle, ticket, divisioni e backup continuano a funzionare.
 

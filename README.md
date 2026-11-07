@@ -1,8 +1,11 @@
-# ParsMea iPhone 2.0.0 AI Free
+# ParsMea iPhone 2.0.1 AI Free
 
 La web app PWA ParsMea iPhone per dividere gli scontrini tra più persone, mantenendo **foto, ticket, cartelle e ripartizioni nell'archivio locale** dello stesso iPhone.
 
-## Novità 2.0.0
+## Novità 2.0.1
+
+- **Correzione sconti IA:** quando l'IA restituisce il prezzo lordo e uno sconto già associato a un articolo, lo sconto viene sottratto solo se spiega esattamente la differenza con il totale stampato. Esempio: rustici 2,04 € − 0,05 € = 1,99 €; totale Lidl 21,87 €. Nessuna sottrazione doppia né compensazione inventata.
+- **Non serve riconfigurare Cloudflare:** per chi utilizza già il Worker di ParsMea AI 2.0, basta aggiornare i file della PWA sullo stesso repository.
 
 - **Lettura degli scontrini con IA vision** via Cloudflare Workers AI (piano gratuito, su Worker personale).
 - Riconoscimento diretto dei prodotti e dei prezzi netti, separazione di sconti e modalità di pagamento.

@@ -2008,7 +2008,9 @@ export default function TicketManager({
                   color: '#21875d'
                 }}>
                   <span>
-                    Sconti riconosciuti
+                    {totalsMatch
+                      ? 'Sconti già inclusi nei prezzi finali'
+                      : 'Sconti riconosciuti (da verificare)'}
                   </span>
 
                   <strong>
